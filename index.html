@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLI - Sistema de Licencia Interna de Conducción</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-screen-wrapper">
+        <div class="login-card">
+            <div class="login-brand">
+                <img src="newmont_logo.jpg" alt="Newmont Argentina" class="login-logo">
+                <h2>SLI - Licencia de Conducción Interna</h2>
+                <p>Ingresa tus credenciales para acceder al sistema</p>
+            </div>
+
+            <!-- Login Tabs -->
+            <div class="login-tabs">
+                <button class="login-tab-btn active" id="btn-tab-login">Acceso</button>
+                <button class="login-tab-btn" id="btn-tab-info">Info</button>
+            </div>
+
+            <!-- Login Form Panel -->
+            <div id="login-form-panel">
+                <form id="form-login" class="login-form">
+                    <div class="form-group">
+                        <label for="login-name">Nombre Completo *</label>
+                        <input type="text" id="login-name" required placeholder="Nombre y Apellido">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Contraseña (Nro. Legajo) *</label>
+                        <input type="password" id="login-password" required placeholder="Ej: L-4589 o ADM-01">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 btn-large btn-glow-anim" style="margin-top: 10px;">
+                        Ingresar al Sistema
+                    </button>
+                    <div class="login-footer">
+                        <span>¿No tienes un usuario registrado?</span>
+                        <button type="button" class="btn-link" id="btn-show-register">Crear nuevo usuario (Inscripción)</button>
+                    </div>
+                </form>
+
+            </div>
+
+            <!-- Register Form Panel -->
+            <div id="register-form-panel" class="hidden">
+                <form id="form-register-new" class="login-form">
+                    <div class="form-group">
+                        <label for="reg-name">Nombre Completo *</label>
+                        <input type="text" id="reg-name" required placeholder="Ej: Juan Pérez">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-legajo">Legajo / ID (Se usará como contraseña) *</label>
+                        <input type="text" id="reg-legajo" required placeholder="Ej: L-5082">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-sector">Sector / Área *</label>
+                        <input type="text" id="reg-sector" required placeholder="Ej: Logística / Producción">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-licencia">Nro. de Licencia Nacional *</label>
+                        <input type="text" id="reg-licencia" required placeholder="Ej: 48392012">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Correo Electrónico *</label>
+                        <input type="email" id="reg-email" required placeholder="Ej: jperez@newmont.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Equipos a Autorizar *</label>
+                        <div class="radio-premium-group" style="display: flex; gap: 15px; margin-top: 5px;">
+                            <label class="radio-premium-label" style="flex: 1; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.02); transition: border-color 0.2s;">
+                                <input type="radio" name="reg-tipo-equipo" value="livianos" checked style="accent-color: var(--primary);">
+                                <span style="font-size: 0.85rem; font-weight: 500;">Equipos Livianos</span>
+                            </label>
+                            <label class="radio-premium-label" style="flex: 1; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.02); transition: border-color 0.2s;">
+                                <input type="radio" name="reg-tipo-equipo" value="pesados" style="accent-color: var(--primary);">
+                                <span style="font-size: 0.85rem; font-weight: 500;">Equipos Pesados</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Quota warning inside registration -->
+                    <div id="register-quota-warning" class="quota-warning-box hidden">
+                        Cupos agotados para esta semana (Límite 100). No es posible realizar nuevos registros.
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 btn-large" id="btn-register-submit" style="margin-top: 10px;">
+                        Completar Inscripción (Reservar Cupo)
+                    </button>
+                    <div class="login-footer">
+                        <span>¿Ya tienes un usuario registrado?</span>
+                        <button type="button" class="btn-link" id="btn-show-login">Volver al ingreso</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Info Panel -->
+            <div id="info-panel" class="hidden">
+                <div class="info-credits-card">
+                    <div class="info-credits-icon">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--warning)" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </div>
+                    <h3>Reseña Institucional</h3>
+                    <p class="credits-text">Aplicación creada por <strong>Nicolás Márquez</strong></p>
+                    <span class="credits-footer">Todos los derechos reservados &copy; 2026</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Bar / Navigation -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <img src="newmont_logo.jpg" alt="Newmont Logo" class="header-logo">
+                <div class="brand-text">
+                    <h1>SLI</h1>
+                    <span>Licencia Interna de Manejo</span>
+                </div>
+            </div>
+            
+            <!-- User Status & Logout -->
+            <div class="user-status-container" id="user-status-header">
+                <span class="user-welcome">Hola, <strong id="logged-user-name">--</strong> (<span id="logged-user-role" class="badge badge-info">--</span>)</span>
+                <button class="btn btn-secondary btn-sm" id="btn-logout">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-container">
+        <!-- Notification Center (Toast-like) -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- System Banner Info -->
+        <section class="info-bar-section">
+            <div class="quota-widget" id="quota-widget">
+                <div class="quota-info">
+                    <div class="quota-title">Cupos para esta semana</div>
+                    <div class="quota-numbers"><span id="quota-used">0</span> / <span id="quota-limit">100</span></div>
+                </div>
+                <div class="quota-progress-bar">
+                    <div class="quota-progress" id="quota-progress" style="width: 0%"></div>
+                </div>
+                <div class="quota-reset-info" id="quota-reset-text">Reinicio automático cada domingo</div>
+            </div>
+            
+            <!-- Quick Stats for Admin/Supervisor (Hidden for Operator) -->
+            <div class="dashboard-stats hidden" id="dashboard-stats">
+                <div class="stat-card">
+                    <span class="stat-num" id="stat-total">0</span>
+                    <span class="stat-label">Inscriptos</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-num" id="stat-docs-pending">0</span>
+                    <span class="stat-label">Docs Pendientes</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-num" id="stat-theory-pending">0</span>
+                    <span class="stat-label">Evaluación Pendiente</span>
+                </div>
+                <div class="stat-card highlight">
+                    <span class="stat-num" id="stat-ok-practico">0</span>
+                    <span class="stat-label">Estado OK (Práctica)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: OPERATOR -->
+        <section id="view-operador" class="role-view active">
+            <div class="view-header">
+                <h2>Portal del Operador</h2>
+            </div>
+
+            <!-- Stage Progress Indicator (Stepper) -->
+            <div class="stepper-container" id="operator-stepper">
+                <div class="step active" id="step-1">
+                    <div class="step-icon">1</div>
+                    <div class="step-label">Inscripción</div>
+                </div>
+                <div class="step" id="step-2">
+                    <div class="step-icon">2</div>
+                    <div class="step-label">Datos y Docs</div>
+                </div>
+                <div class="step" id="step-3">
+                    <div class="step-icon">3</div>
+                    <div class="step-label">Capacitación</div>
+                </div>
+                <div class="step" id="step-4">
+                    <div class="step-icon">4</div>
+                    <div class="step-label">Evaluación</div>
+                </div>
+                <div class="step" id="step-5">
+                    <div class="step-icon">5</div>
+                    <div class="step-label">Listo (OK)</div>
+                </div>
+            </div>
+
+            <!-- OPERATOR WRAPPER FOR SECTIONS -->
+            <div class="operator-grid">
+                <!-- Personal Data and Documents Form -->
+                <div class="card" id="op-data-card">
+                    <div class="card-header">
+                        <div class="card-icon-title">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></svg>
+                            <h3>Datos Personales y Documentación</h3>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-datos-operador" class="form-grid">
+                            <div class="form-group">
+                                <label for="op-nombre">Nombre Completo *</label>
+                                <input type="text" id="op-nombre" required placeholder="Ej. Juan Pérez">
+                            </div>
+                            <div class="form-group">
+                                <label for="op-legajo">Legajo / ID de Empleado *</label>
+                                <input type="text" id="op-legajo" required placeholder="Ej. L-4820">
+                            </div>
+                            <div class="form-group">
+                                <label for="op-sector">Sector / Área *</label>
+                                <input type="text" id="op-sector" required placeholder="Ej. Logística / Producción">
+                            </div>
+                            <div class="form-group">
+                                <label for="op-licencia">Nro. de Licencia Nacional *</label>
+                                <input type="text" id="op-licencia" required placeholder="Ej. 12345678">
+                            </div>
+                            <div class="form-group">
+                                <label for="op-email">Correo Electrónico *</label>
+                                <input type="email" id="op-email" required placeholder="Ej. jperez@newmont.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="op-tipo-equipo">Tipo de Equipos Autorizados</label>
+                                <input type="text" id="op-tipo-equipo" disabled style="background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: not-allowed;">
+                            </div>
+
+                            <div class="document-upload-section">
+                                <h4>Adjuntar Documentación Requerida</h4>
+                                <p class="section-help">Formatos aceptados: PDF, PNG, JPG (Máx. 5MB por archivo)</p>
+                                
+                                <!-- File 1 -->
+                                <div class="file-upload-item">
+                                    <div class="file-info-col">
+                                        <div class="file-icon">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="4"></line><line x1="8" y1="2" x2="8" y2="4"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                        </div>
+                                        <div>
+                                            <span class="file-name">Licencia Nacional de Conducción *</span>
+                                            <span class="file-status" id="status-doc-licencia">No cargado</span>
+                                        </div>
+                                    </div>
+                                    <div class="file-action-col">
+                                        <input type="file" id="file-licencia" class="file-input-hidden" accept=".pdf,image/*">
+                                        <label for="file-licencia" class="btn btn-secondary btn-sm">Seleccionar</label>
+                                    </div>
+                                </div>
+
+                                <!-- File 2 -->
+                                <div class="file-upload-item">
+                                    <div class="file-info-col">
+                                        <div class="file-icon">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a5 5 0 0 1 10 0v1.662"></path></svg>
+                                        </div>
+                                        <div>
+                                            <span class="file-name">Foto 4x4 Personal *</span>
+                                            <span class="file-status" id="status-doc-foto">No cargado</span>
+                                        </div>
+                                    </div>
+                                    <div class="file-action-col">
+                                        <input type="file" id="file-foto" class="file-input-hidden" accept="image/*">
+                                        <label for="file-foto" class="btn btn-secondary btn-sm">Seleccionar</label>
+                                    </div>
+                                </div>
+
+                                <!-- File 3 -->
+                                <div class="file-upload-item">
+                                    <div class="file-info-col">
+                                        <div class="file-icon">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        </div>
+                                        <div>
+                                            <span class="file-name">Autorización de Manejo de la Empresa *</span>
+                                            <span class="file-status" id="status-doc-autorizacion">No cargado</span>
+                                        </div>
+                                    </div>
+                                    <div class="file-action-col">
+                                        <input type="file" id="file-autorizacion" class="file-input-hidden" accept=".pdf,image/*">
+                                        <label for="file-autorizacion" class="btn btn-secondary btn-sm">Seleccionar</label>
+                                    </div>
+                                </div>
+
+                                <!-- File 4 (Only for Equipos Pesados) -->
+                                <div class="file-upload-item hidden" id="uploader-item-certificacion">
+                                    <div class="file-info-col">
+                                        <div class="file-icon">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                        </div>
+                                        <div>
+                                            <span class="file-name">Certificación Habilitante *</span>
+                                            <span class="file-status" id="status-doc-certificacion">No cargado</span>
+                                        </div>
+                                    </div>
+                                    <div class="file-action-col">
+                                        <input type="file" id="file-certificacion" class="file-input-hidden" accept=".pdf,image/*">
+                                        <label for="file-certificacion" class="btn btn-secondary btn-sm">Seleccionar</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary w-100" id="btn-guardar-datos">Guardar y Enviar Documentación</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Training and Evaluation Status (Right/Flow side) -->
+                <div class="card hidden" id="op-status-card">
+                    <div class="card-header">
+                        <div class="card-icon-title">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            <h3>Estado de tu Trámite</h3>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Step 3: Theoretical Course Details -->
+                        <div class="status-block" id="block-teorico-turno">
+                            <div class="status-block-header">
+                                <span class="badge badge-info">Paso 3: Capacitación Teórica</span>
+                            </div>
+                            <div class="appointment-card">
+                                <div class="calendar-icon">
+                                    <span class="month">VIE</span>
+                                    <span class="day" id="appointment-day">--</span>
+                                </div>
+                                <div class="appointment-details">
+                                    <h4>Turno Asignado Automáticamente</h4>
+                                    <p class="time">Viernes Próximo: <span id="appointment-date-text">--/--/----</span></p>
+                                    <p class="hours">Horario: <strong>08:30 a 12:30 hs</strong></p>
+                                    <p class="location">Lugar: <strong>Sala de Capacitación - Formación Técnica - Vein Zone</strong></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Theoretical Exam Score -->
+                        <div class="status-block disabled" id="block-teorico-resultado">
+                            <div class="status-block-header">
+                                <span class="badge badge-pending" id="badge-exam-status">Paso 4: Calificación del Examen</span>
+                            </div>
+                            <div class="score-display-card">
+                                <div class="score-num" id="op-score-val">-</div>
+                                <div class="score-info">
+                                    <h4 id="op-score-title">Evaluación Teórica Pendiente</h4>
+                                    <p id="op-score-desc">Debes asistir a la capacitación del viernes para poder rendir y registrar tu nota.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Final OK for Practical Stage -->
+                        <div class="status-block disabled" id="block-practico-ok">
+                            <div class="status-block-header">
+                                <span class="badge badge-pending" id="badge-practical-status">Paso 5: Habilitación Práctica</span>
+                            </div>
+                            <div class="practical-ok-card" id="practical-card-container">
+                                <div class="ok-icon">
+                                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="ok-details">
+                                    <h4 id="practical-title">Pendiente Evaluación Teórica</h4>
+                                    <p id="practical-desc">Una vez aprobado el examen teórico con nota mínima, se habilitará tu pase a la evaluación práctica y aparecerás en la planilla del Supervisor.</p>
+                                </div>
+                                <div id="issued-license-container" style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px; text-align: center; width: 100%;">
+                                    <button type="button" class="btn btn-success btn-glow-success" id="btn-view-issued-license" style="width: 100%;">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px; vertical-align: middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        VER LICENCIA INTERNA
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: SUPERVISOR & ADMIN (Shared dashboard table but with permission nuances) -->
+        <section id="view-dashboard" class="role-view">
+            <div class="view-header">
+                <h2 id="dashboard-title">Panel de Control: Supervisores</h2>
+                
+                <div class="action-buttons-group">
+                    <!-- Config Limit (Admin only) -->
+                    <div class="admin-only-flex hidden" id="admin-quota-config">
+                        <label for="input-quota-limit">Editar Cupo Semanal:</label>
+                        <input type="number" id="input-quota-limit" class="input-premium inline-input" value="15" min="1" max="15">
+                        <button class="btn btn-secondary btn-sm" id="btn-update-quota">Actualizar</button>
+                    </div>
+
+                    <!-- Export Excel button -->
+                    <button class="btn btn-success btn-glow-success" id="btn-export-excel">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2z"></path><line x1="9" y1="15" x2="15" y2="15"></line><line x1="12" y1="12" x2="12" y2="18"></line></svg>
+                        Descargar Planilla Práctica (Excel)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard Tab Bar (Shown only for Admin) -->
+            <div class="admin-dashboard-tabs hidden" id="admin-dashboard-tabs">
+                <button class="dash-tab-btn active" data-dash-tab="licenses">Gestión de Licencias (Operadores)</button>
+                <button class="dash-tab-btn" data-dash-tab="staff">Gestión de Personal (Admins / Instructores)</button>
+            </div>
+
+            <!-- SECTION 1: LICENCIAS / OPERADORES -->
+            <div id="dash-section-licencias" class="dash-section active">
+                <!-- Filters Area -->
+            <div class="filters-card">
+                <div class="filter-group">
+                    <label for="filter-search">Buscar Operador:</label>
+                    <input type="text" id="filter-search" class="input-premium" placeholder="Buscar por nombre, legajo o sector...">
+                </div>
+                <div class="filter-group">
+                    <label for="filter-status">Filtrar por Estado:</label>
+                    <select id="filter-status" class="select-premium">
+                        <option value="todos">Todos los Estados</option>
+                        <option value="inscrito">Inscripto (Sin Datos/Docs completos)</option>
+                        <option value="documentos_cargados">Docs Cargados (Pendiente validación)</option>
+                        <option value="turno_asignado">Turno Asignado (Teórico Pendiente)</option>
+                        <option value="teorico_aprobado">Examen Teórico Aprobado (Estado OK)</option>
+                        <option value="teorico_reprobado">Examen Teórico Reprobado</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Operators Table -->
+            <div class="table-container">
+                <table class="table-premium" id="table-operadores">
+                    <thead>
+                        <tr>
+                            <th>Operador / Legajo</th>
+                            <th>Sector</th>
+                            <th>Inscripción</th>
+                            <th>Docs Cargados</th>
+                            <th>Fecha Turno Teórico</th>
+                            <th>Nota Teórica</th>
+                            <th>Práctica</th>
+                            <th>Estado Final</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-operadores">
+                        <!-- Dynamic rows loaded from JS -->
+                        <tr>
+                            <td colspan="9" class="text-center">Cargando información...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </div>
+
+            <!-- SECTION 2: GESTION DE PERSONAL (ADMINS / INSTRUCTORES) -->
+            <div id="dash-section-staff" class="dash-section">
+                <div class="card-header-with-action" style="margin-top: 20px;">
+                    <h3 style="margin: 0; font-size: 1.25rem;">Personal y Docentes Habilitados</h3>
+                    <button class="btn btn-success btn-glow-success btn-sm" id="btn-add-staff">+ Crear Nuevo Usuario</button>
+                </div>
+                <div class="table-container" style="margin-top: 15px;">
+                    <table class="table-premium" id="table-staff">
+                        <thead>
+                            <tr>
+                                <th>Nombre Completo</th>
+                                <th>Rol / Perfil</th>
+                                <th>Contraseña / Legajo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-staff">
+                            <!-- Cargar dinámicamente desde JS -->
+                            <tr>
+                                <td colspan="4" class="text-center">Cargando personal...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- OPERATOR DETAIL MODAL (Admin and Supervisor) -->
+    <div id="operator-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-operator-name">Detalle de Operador</h3>
+                <span class="close-btn" id="btn-close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- Modal Tabs -->
+                <div class="modal-tabs-header">
+                    <button class="modal-tab-btn active" data-tab="tab-datos-docs">Datos y Documentos</button>
+                    <button class="modal-tab-btn" data-tab="tab-evaluacion">Evaluación Teórica</button>
+                    <button class="modal-tab-btn" data-tab="tab-practica">Evaluación Práctica</button>
+                    <button class="modal-tab-btn" data-tab="tab-licencia-digital">Licencia Digital</button>
+                </div>
+
+                <div class="modal-tabs-content">
+                    <!-- Tab 1: Datos y Documentos -->
+                    <div class="modal-tab-panel active" id="tab-datos-docs">
+                        <form id="modal-form-edit-datos" class="form-grid">
+                            <div class="form-group">
+                                <label for="modal-edit-nombre">Nombre Completo *</label>
+                                <input type="text" id="modal-edit-nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-edit-legajo">Legajo / ID *</label>
+                                <input type="text" id="modal-edit-legajo" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-edit-sector">Sector / Área *</label>
+                                <input type="text" id="modal-edit-sector" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-edit-licencia">Nro. de Licencia Nacional *</label>
+                                <input type="text" id="modal-edit-licencia" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-edit-email">Correo Electrónico *</label>
+                                <input type="email" id="modal-edit-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-edit-tipo-equipo">Tipo de Equipos a Autorizar *</label>
+                                <select id="modal-edit-tipo-equipo" class="select-premium" required>
+                                    <option value="livianos">Equipos Livianos</option>
+                                    <option value="pesados">Equipos Pesados</option>
+                                </select>
+                            </div>
+                            <div class="form-actions-full">
+                                <button type="submit" class="btn btn-secondary btn-sm" id="btn-save-modal-data">Guardar Cambios Personales</button>
+                            </div>
+                        </form>
+
+                        <hr class="modal-divider">
+
+                        <h4>Documentación Adjunta</h4>
+                        <div class="modal-docs-grid">
+                            <!-- Licencia -->
+                            <div class="modal-doc-card">
+                                <div class="doc-title">Licencia Nacional</div>
+                                <div class="doc-status-badge" id="modal-status-licencia">Pendiente</div>
+                                <div class="doc-actions" id="modal-actions-licencia">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+                            <!-- Foto -->
+                            <div class="modal-doc-card">
+                                <div class="doc-title">Foto 4x4</div>
+                                <div class="doc-status-badge" id="modal-status-foto">Pendiente</div>
+                                <div class="doc-actions" id="modal-actions-foto">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+                            <!-- Autorizacion -->
+                            <div class="modal-doc-card">
+                                <div class="doc-title">Autorización de Manejo</div>
+                                <div class="doc-status-badge" id="modal-status-autorizacion">Pendiente</div>
+                                <div class="doc-actions" id="modal-actions-autorizacion">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+                            <!-- Certificacion (Only for Equipos Pesados) -->
+                            <div class="modal-doc-card hidden" id="modal-card-certificacion">
+                                <div class="doc-title">Certificación Habilitante</div>
+                                <div class="doc-status-badge" id="modal-status-certificacion">Pendiente</div>
+                                <div class="doc-actions" id="modal-actions-certificacion">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Evaluación Teórica -->
+                    <div class="modal-tab-panel" id="tab-evaluacion">
+                        <div class="grade-editor-card">
+                            <h4>Registrar Calificación de Examen Teórico</h4>
+                            <p class="description">Al calificar al operador como Aprobado, su estado cambiará automáticamente a "OK" (Habilitado para la etapa práctica) y estará disponible en la planilla Excel.</p>
+                            
+                            <form id="form-grade-eval" class="form-grid">
+                                <div class="form-group">
+                                    <label for="eval-nota">Nota de Evaluación (0 - 10) *</label>
+                                    <input type="number" id="eval-nota" min="0" max="10" step="0.5" placeholder="Ej. 8.5" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eval-estado">Resultado de la Evaluación *</label>
+                                    <select id="eval-estado" class="select-premium" required>
+                                        <option value="">Seleccionar resultado...</option>
+                                        <option value="aprobado">Aprobado (Pasa a Práctica)</option>
+                                        <option value="desaprobado">No Aprobado</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions-full">
+                                    <button type="submit" class="btn btn-primary" id="btn-save-grade">Guardar Calificación</button>
+                                </div>
+                            </form>
+                            
+                            <hr class="modal-divider" style="margin: 20px 0;">
+                            
+                            <h4 style="margin: 0 0 5px 0; font-size: 1rem;">Respaldo de Examen Físico / Escrito</h4>
+                            <p class="description" style="margin-bottom: 12px;">Adjunte una copia escaneada o fotografía del examen teórico realizado por el operador.</p>
+                            
+                            <div class="file-upload-item" id="modal-exam-upload-item" style="border: 1px dashed rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 15px; background: rgba(255,255,255,0.02);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--warning)" stroke-width="2" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    <div style="min-width: 0;">
+                                        <span id="modal-exam-file-name" style="font-weight: 500; font-size: 0.85rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Sin examen cargado</span>
+                                        <span id="modal-exam-file-size" style="font-size: 0.7rem; color: var(--text-muted);">PDF, JPG, PNG (Máx 5MB)</span>
+                                    </div>
+                                </div>
+                                <div id="modal-exam-actions" style="display: flex; gap: 6px; flex-shrink: 0;">
+                                    <input type="file" id="file-exam-upload" style="display: none;" accept=".pdf,image/*">
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-select-exam-file">Seleccionar Archivo</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Evaluación Práctica -->
+                    <div class="modal-tab-panel" id="tab-practica">
+                        <div class="grade-editor-card" id="tab-practica-content-livianos">
+                            <h4>Registrar Resultado de la Evaluación Práctica</h4>
+                            <p class="description">Selecciona el resultado de la prueba práctica de manejo. Si el operador aprueba la teoría y la práctica, su estado final será "Autorizado".</p>
+                            
+                            <form id="form-grade-practica" class="form-grid">
+                                <div class="form-group">
+                                    <label for="practica-estado">Resultado de la Prueba Práctica *</label>
+                                    <select id="practica-estado" class="select-premium" required>
+                                        <option value="pendiente">Pendiente</option>
+                                        <option value="ok">OK (Aprobado)</option>
+                                        <option value="recuperar">Recuperar (No Aprobado)</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions-full">
+                                    <button type="submit" class="btn btn-primary" id="btn-save-practica">Guardar Resultado Práctico</button>
+                                </div>
+                            </form>
+                            
+                            <hr class="modal-divider" style="margin: 20px 0;">
+                            
+                            <h4 style="margin: 0 0 5px 0; font-size: 1rem;">Formulario de Evaluación Práctica (Planilla)</h4>
+                            <p class="description" style="margin-bottom: 12px;">Adjunte una copia firmada o fotografía de la planilla del examen práctico de manejo.</p>
+                            
+                            <div class="file-upload-item" id="modal-practica-upload-item" style="border: 1px dashed rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 15px; background: rgba(255,255,255,0.02);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--warning)" stroke-width="2" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    <div style="min-width: 0;">
+                                        <span id="modal-practica-file-name" style="font-weight: 500; font-size: 0.85rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Sin planilla cargada</span>
+                                        <span id="modal-practica-file-size" style="font-size: 0.7rem; color: var(--text-muted);">PDF, JPG, PNG (Máx 5MB)</span>
+                                    </div>
+                                </div>
+                                <div id="modal-practica-actions" style="display: flex; gap: 6px; flex-shrink: 0;">
+                                    <input type="file" id="file-practica-upload" style="display: none;" accept=".pdf,image/*">
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-select-practica-file">Seleccionar Archivo</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grade-editor-card" id="tab-practica-content-pesados" style="display: none;">
+                            <div style="text-align: center; padding: 30px 15px;">
+                                <div style="background: rgba(46, 204, 113, 0.1); border: 1px solid var(--success); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                                    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <h4 style="color: var(--success); margin-bottom: 8px;">Operador Exento de Examen Práctico</h4>
+                                <p class="description" style="max-width: 400px; margin: 0 auto; line-height: 1.5;">
+                                    Este operador está registrado para <strong>Equipos Pesados</strong>. Por lo tanto, no requiere realizar la evaluación práctica de manejo.
+                                    <br><br>
+                                    Su estado de autorización dependerá exclusivamente de la aprobación del examen teórico y la validación de su <strong>Certificación Habilitante</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 4: Licencia Digital -->
+                    <div class="modal-tab-panel" id="tab-licencia-digital">
+                        <div class="grade-editor-card">
+                            <h4>Licencia Interna Emitida (Firma / PDF)</h4>
+                            <p class="description">Cargue la Licencia Interna final emitida para que el operador pueda visualizarla y descargarla desde su portal.</p>
+                            
+                            <div class="file-upload-item" id="modal-issued-license-upload-item" style="border: 1px dashed rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 15px; background: rgba(255,255,255,0.02);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--success)" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="4"></line><line x1="8" y1="2" x2="8" y2="4"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                    <div style="min-width: 0;">
+                                        <span id="modal-issued-license-file-name" style="font-weight: 500; font-size: 0.85rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Sin licencia emitida cargada</span>
+                                        <span id="modal-issued-license-file-size" style="font-size: 0.7rem; color: var(--text-muted);">PDF, JPG, PNG (Máx 5MB)</span>
+                                    </div>
+                                </div>
+                                <div id="modal-issued-license-actions" style="display: flex; gap: 6px; flex-shrink: 0;">
+                                    <input type="file" id="file-issued-license-upload" style="display: none;" accept=".pdf,image/*">
+                                    <button type="button" class="btn btn-primary btn-sm" id="btn-select-issued-license-file">Subir Licencia</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <div class="footer-left">
+                    <button class="btn btn-danger" id="btn-delete-operator">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        Eliminar Operador
+                    </button>
+                    <span class="delete-warning-text hidden" id="delete-warning-msg">Requiere autorización del Admin</span>
+                </div>
+                <button class="btn btn-secondary" id="btn-cancel-modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCUMENT VIEW MODAL (For previewing documents/images) -->
+    <div id="doc-viewer-modal" class="modal doc-viewer-modal">
+        <div class="modal-content doc-viewer-content">
+            <div class="modal-header">
+                <h3 id="doc-viewer-title">Vista previa de Documento</h3>
+                <span class="close-btn" id="btn-close-viewer">&times;</span>
+            </div>
+            <div class="modal-body doc-viewer-body" id="doc-viewer-body">
+                <!-- Preview image or placeholder will be rendered here -->
+            </div>
+            <div class="modal-footer" id="doc-viewer-footer" style="justify-content: flex-end; gap: 10px; padding: 15px 20px; border-top: 1px solid var(--border-color);">
+                <button class="btn btn-secondary btn-sm" id="btn-viewer-open-external">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    Abrir en pestaña externa
+                </button>
+                <button class="btn btn-primary btn-sm" id="btn-viewer-download">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Descargar
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- STAFF USER DETAIL/EDIT/CREATE MODAL (For Admins only) -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 id="user-modal-title">Crear Nuevo Usuario</h3>
+                <span class="close-btn" id="btn-close-user-modal">&times;</span>
+            </div>
+            <div class="modal-body user-modal-body">
+                <form id="form-user-edit" class="form-grid" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="form-group" style="display: flex; flex-direction: column; gap: 5px;">
+                        <label for="user-edit-name">Nombre Completo *</label>
+                        <input type="text" id="user-edit-name" class="input-premium" required placeholder="Ej: Nicolas Marquez">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; gap: 5px;">
+                        <label for="user-edit-role">Rol / Perfil *</label>
+                        <select id="user-edit-role" class="select-premium" required>
+                            <option value="admin">Administrador</option>
+                            <option value="supervisor">Instructor Teórico</option>
+                            <option value="instructor_tecnico">Instructor Práctico</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; gap: 5px;">
+                        <label for="user-edit-pass">Contraseña (Legajo / Pass) *</label>
+                        <input type="text" id="user-edit-pass" class="input-premium" required placeholder="Ej: 3350">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; gap: 10px;">
+                        <button type="button" class="btn btn-danger" id="btn-delete-user" style="display: none;">Eliminar Usuario</button>
+                        <div style="display: flex; gap: 10px; margin-left: auto;">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-cancel-user-modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary btn-sm" id="btn-save-user">Guardar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
