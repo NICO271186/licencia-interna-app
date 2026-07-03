@@ -1368,7 +1368,7 @@ function simulateEmailNotification(op, type, docName) {
         </div>
         <div style="padding: 15px; color: var(--text-primary); font-size: 0.85rem; line-height: 1.5; font-family: system-ui, -apple-system, sans-serif;">
             <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-                <div><strong>De:</strong> <span class="text-muted">sistema-sli@newmont.com</span></div>
+                <div><strong>De:</strong> <span class="text-muted">Licencia Interna &lt;sistema-sli@newmont.com&gt;</span></div>
                 <div><strong>Para:</strong> <strong style="color:var(--warning);">${op.email || 'sin-correo@ejemplo.com'}</strong></div>
                 <div><strong>Asunto:</strong> <span style="font-weight: 500;">Rechazo de Documento - Licencia Interna de Manejo SLI</span></div>
             </div>
@@ -1424,7 +1424,7 @@ function simulateEmailPracticalFail(op) {
         </div>
         <div style="padding: 15px; color: var(--text-primary); font-size: 0.85rem; line-height: 1.5; font-family: system-ui, -apple-system, sans-serif;">
             <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-                <div><strong>De:</strong> <span class="text-muted">sistema-sli@newmont.com</span></div>
+                <div><strong>De:</strong> <span class="text-muted">Licencia Interna &lt;sistema-sli@newmont.com&gt;</span></div>
                 <div><strong>Para:</strong> <strong style="color:var(--warning);">${op.email || 'sin-correo@ejemplo.com'}</strong></div>
                 <div><strong>Asunto:</strong> <span style="font-weight: 500;">Reprobación de Examen Práctico - Licencia Interna de Manejo SLI</span></div>
             </div>
@@ -1476,7 +1476,7 @@ function simulateEmailMaxAttemptsExceeded(op) {
         </div>
         <div style="padding: 15px; color: var(--text-primary); font-size: 0.85rem; line-height: 1.5; font-family: system-ui, -apple-system, sans-serif;">
             <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-                <div><strong>De:</strong> <span class="text-muted">sistema-sli@newmont.com</span></div>
+                <div><strong>De:</strong> <span class="text-muted">Licencia Interna &lt;sistema-sli@newmont.com&gt;</span></div>
                 <div><strong>Para:</strong> <strong style="color:var(--danger);">${op.email || 'sin-correo@ejemplo.com'}</strong></div>
                 <div><strong>Asunto:</strong> <span style="font-weight: 500; color: var(--danger);">TRÁMITE REVERTIDO - Límite de Intentos Excedido</span></div>
             </div>
