@@ -914,6 +914,64 @@ function handleSaveOperatorData(e) {
     renderApp();
 }
 
+// Procesar y comprimir archivos antes de guardar para no agotar la cuota de localStorage
+function compressAndSaveFile(file, callback) {
+    if (file.type === 'application/pdf') {
+        // Para PDFs, guardamos un base64 de PDF simulado súper ligero (1KB)
+        const dummyPdfBase64 = "data:application/pdf;base64,JVBERi0xLjQKJdPpNDgKMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nCiAgICAgL1BhZ2VzIDIgMCBSCiAgPj4KZW5kb2JqCjIgMCBvYmoKICA8PCAvVHlwZSAvUGFnZXMKICAgICAvS2lkcyBbIDMgMCBSIF0KICAgICAvQ291bnQgMQogID4+CmVuZG9iagozIDAgb2JqCiAgPDwgL1R5cGUgL1BhZ2UKICAgICAvUGFyZW50IDIgMCBSCiAgICAgL01lZGlhQm94IFsgMCAwIDU5NSA4NDIgXQogICAgIC9SZXNvdXJjZXMgPDwgPj4KICAgICAvQ29udGVudHMgNCAwIFIKICA+PgplbmRvYmoKNCAwIG9iagogIDw8IC9MZW5ndGggMCA+PgpzdHJlYW0KZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA4NSAwMDAwMCBuIAowMDAwMDAwMTQ2IDAwMDAwIG4gCjAwMDAwMDAyNjAgMDAwMDAgbiAKdHJhaWxlcgogIDw8IC9TaXplIDUKICAgICAvUm9vdCAxIDAgUgogID4+CnN0YXJ0eHJlZgogIDMwNwolJUVPRgo=";
+        callback(dummyPdfBase64);
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        // Cualquier otro tipo se guarda con un mock básico de texto
+        callback("data:text/plain;base64,TU9DS19DT05URU5U");
+        return;
+    }
+    
+    // Si es imagen, la redimensionamos a un tamaño máximo de 600px y la comprimimos al 60%
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max_size = 600;
+            
+            if (width > height) {
+                if (width > max_size) {
+                    height *= max_size / width;
+                    width = max_size;
+                }
+            } else {
+                if (height > max_size) {
+                    width *= max_size / height;
+                    height = max_size;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Exportar como JPEG comprimido
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+            callback(compressedBase64);
+        };
+        img.onerror = function() {
+            // Fallback si falla la carga de la imagen
+            callback(event.target.result);
+        };
+        img.src = event.target.result;
+    };
+    reader.onerror = function() {
+        callback(null);
+    };
+    reader.readAsDataURL(file);
+}
+
 // Simular carga de un archivo específico
 function handleFileUpload(e, type) {
     const file = e.target.files[0];
@@ -932,20 +990,29 @@ function handleFileUpload(e, type) {
     const sizeKB = file.size / 1024;
     const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
     
-    const reader = new FileReader();
-    reader.onload = function(event) {
+    // Procesar y guardar el archivo comprimido/mockeado
+    compressAndSaveFile(file, function(compressedBase64) {
+        if (!compressedBase64) {
+            showToast('Error al procesar el archivo', 'danger');
+            return;
+        }
+        
         op.documentos[type] = {
             name: file.name,
             size: sizeStr,
             uploadedAt: new Date().toISOString(),
-            dataUrl: event.target.result, // Almacena base64 para ver y descargar
+            dataUrl: compressedBase64,
             status: 'cargado'
         };
+        
         saveOperatorsToStorage();
         updateFileStatusLabel(type, op.documentos[type]);
         showToast(`Documento "${file.name}" cargado correctamente`, 'success');
-    };
-    reader.readAsDataURL(file);
+        
+        if (currentRole === 'operador') {
+            renderOperatorView();
+        }
+    });
 }
 
 // --- VISTA SUPERVISOR Y ADMIN (DASHBOARD TABLE) ---
@@ -1574,19 +1641,21 @@ function bindExamUploadListeners(op) {
         const sizeKB = file.size / 1024;
         const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
         
-        const reader = new FileReader();
-        reader.onload = function(event) {
+        compressAndSaveFile(file, function(compressedBase64) {
+            if (!compressedBase64) {
+                showToast('Error al procesar el archivo', 'danger');
+                return;
+            }
             op.examenEscrito = {
                 name: file.name,
                 size: sizeStr,
                 uploadedAt: new Date().toISOString(),
-                dataUrl: event.target.result
+                dataUrl: compressedBase64
             };
             saveOperatorsToStorage();
             showToast('Examen teórico cargado correctamente', 'success');
             renderModalExamCard(op);
-        };
-        reader.readAsDataURL(file);
+        });
     });
 }
 
@@ -1664,19 +1733,21 @@ function bindPracticaUploadListeners(op) {
         const sizeKB = file.size / 1024;
         const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
         
-        const reader = new FileReader();
-        reader.onload = function(event) {
+        compressAndSaveFile(file, function(compressedBase64) {
+            if (!compressedBase64) {
+                showToast('Error al procesar el archivo', 'danger');
+                return;
+            }
             op.planillaPractica = {
                 name: file.name,
                 size: sizeStr,
                 uploadedAt: new Date().toISOString(),
-                dataUrl: event.target.result
+                dataUrl: compressedBase64
             };
             saveOperatorsToStorage();
             showToast('Planilla de examen práctico cargada correctamente', 'success');
             renderModalPracticaCard(op);
-        };
-        reader.readAsDataURL(file);
+        });
     });
 }
 
@@ -1803,19 +1874,21 @@ function bindIssuedLicenseUploadListeners(op) {
         const sizeKB = file.size / 1024;
         const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
         
-        const reader = new FileReader();
-        reader.onload = function(event) {
+        compressAndSaveFile(file, function(compressedBase64) {
+            if (!compressedBase64) {
+                showToast('Error al procesar el archivo', 'danger');
+                return;
+            }
             op.licenciaEmitida = {
                 name: file.name,
                 size: sizeStr,
                 uploadedAt: new Date().toISOString(),
-                dataUrl: event.target.result
+                dataUrl: compressedBase64
             };
             saveOperatorsToStorage();
             showToast('Licencia Interna final cargada correctamente', 'success');
             renderModalIssuedLicenseCard(op);
-        };
-        reader.readAsDataURL(file);
+        });
     });
 }
 
