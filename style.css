@@ -1813,3 +1813,12 @@ body:not(.not-logged-in) .login-screen-wrapper {
     }
 }
 
+/* --- SPINNING ANIMATION FOR SYNC BUTTON --- */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.spinner-anim {
+    animation: spin 1s linear infinite;
+}
+

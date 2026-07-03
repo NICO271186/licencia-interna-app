@@ -379,6 +379,16 @@ function renderApp() {
     
     document.body.classList.remove('not-logged-in');
     
+    // Mostrar/ocultar botón de sincronización a GitHub en local
+    const btnSync = document.getElementById('btn-sync-github');
+    if (btnSync) {
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.startsWith('172.24.')) {
+            btnSync.style.display = 'inline-flex';
+        } else {
+            btnSync.style.display = 'none';
+        }
+    }
+    
     // Rellenar cabecera con datos del usuario logueado
     document.getElementById('logged-user-name').innerText = currentUser.name;
     
@@ -2677,6 +2687,14 @@ function initializeEventListeners() {
     document.getElementById('form-login').addEventListener('submit', handleLogin);
     document.getElementById('form-register-new').addEventListener('submit', handleRegisterNewUser);
     document.getElementById('btn-logout').addEventListener('click', handleLogout);
+    
+    const btnSync = document.getElementById('btn-sync-github');
+    if (btnSync) {
+        btnSync.addEventListener('click', () => {
+            showToast("Ejecuta 'sincronizar.bat' en tu carpeta local para sincronizar.", "info");
+            alert("Para sincronizar tus cambios locales con la versión de GitHub:\n\n1. Ve a la carpeta del proyecto en tu computadora.\n2. Haz doble clic sobre el archivo 'sincronizar.bat'.\n\nEl script se ejecutará de forma segura y subirá tus modificaciones a GitHub en segundos, actualizando la versión web de inmediato.");
+        });
+    }
     
     document.getElementById('btn-show-register').addEventListener('click', () => toggleLoginForms('register'));
     document.getElementById('btn-show-login').addEventListener('click', () => toggleLoginForms('login'));

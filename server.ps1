@@ -6,6 +6,15 @@ $localIP = [System.Net.IPAddress]::Any
 $server = New-Object System.Net.Sockets.TcpListener($localIP, $port)
 
 try {
+    # Detectar la IP de la red Wi-Fi/LAN de forma dinámica (excluyendo autoconfiguración 169.254.*)
+    $wifiIP = (Get-NetIPAddress | Where-Object { $_.InterfaceAlias -like "*Wi-Fi*" -and $_.AddressFamily -eq 'IPv4' -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
+    if (-not $wifiIP) {
+        $wifiIP = (Get-NetIPAddress | Where-Object { $_.AddressFamily -eq 'IPv4' -and $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "192.168.56.*" -and $_.IPAddress -notlike "192.168.184.*" -and $_.IPAddress -notlike "192.168.118.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
+    }
+    if (-not $wifiIP) {
+        $wifiIP = "172.24.6.141"
+    }
+
     $server.Start()
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "      SERVIDOR WEB ACTIVO - LICENCIA INTERNA APP" -ForegroundColor Green
@@ -13,7 +22,7 @@ try {
     Write-Host "-> Acceso local (en esta PC):" -ForegroundColor White
     Write-Host "   http://localhost:$port/" -ForegroundColor Cyan
     Write-Host "-> Acceso desde otra PC en la misma red LAN/Wi-Fi:" -ForegroundColor White
-    Write-Host "   http://172.24.6.76:$port/" -ForegroundColor Yellow
+    Write-Host "   http://$($wifiIP):$port/" -ForegroundColor Yellow
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "Presiona Ctrl+C en esta ventana para detener el servidor." -ForegroundColor Yellow
     Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray
@@ -30,7 +39,7 @@ try {
             continue 
         }
         
-        # Parsear la petición HTTP (ej: GET /index.html HTTP/1.1)
+        # Parsear la petición HTTP
         $parts = $line.Split(' ')
         if ($parts.Length -lt 2) {
             $client.Close()
@@ -44,7 +53,7 @@ try {
             $rawUrl = '/index.html'
         }
         
-        # Decodificar caracteres especiales de la URL (ej: %20 para espacios)
+        # Decodificar caracteres especiales de la URL
         $urlDecoded = [System.Uri]::UnescapeDataString($rawUrl)
         $filePath = Join-Path $PSScriptRoot $urlDecoded.Replace('/', '\').TrimStart('\')
         
