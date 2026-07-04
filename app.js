@@ -1471,6 +1471,37 @@ function handleRejectDocument(opId, type) {
     }
 }
 
+// Enviar un correo electrónico real utilizando el endpoint AJAX gratuito de FormSubmit.co
+function sendRealEmailViaAPI(toEmail, subject, messageText) {
+    if (!toEmail || !toEmail.includes('@') || toEmail.includes('ejemplo.com')) {
+        console.warn("Correo omitido: Dirección de correo electrónico inválida o simulada.");
+        return;
+    }
+    
+    const payload = {
+        _subject: subject,
+        _captcha: "false",
+        "Sistema": "Licencia Interna de Manejo (SLI)",
+        "Mensaje": messageText
+    };
+    
+    fetch(`https://formsubmit.co/ajax/${toEmail}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Correo electrónico real enviado exitosamente:", data);
+    })
+    .catch(error => {
+        console.error("Error al intentar enviar el correo real:", error);
+    });
+}
+
 function simulateEmailNotification(op, type, docName) {
     // Eliminar cualquier notificación de correo anterior
     const oldEmail = document.getElementById('simulated-email-box');
@@ -1517,6 +1548,11 @@ function simulateEmailNotification(op, type, docName) {
     `;
     
     document.body.appendChild(emailBox);
+    
+    // Disparar el envío real
+    const mailSubject = `Rechazo de Documento - Licencia Interna de Manejo SLI`;
+    const mailBody = `Estimado/a ${op.nombre},\n\nLe informamos que el documento adjunto: "${friendlyDoc}" (archivo: ${docName}) para su habilitación de manejo ha sido rechazado tras la evaluación, debido a que no cumple con los requisitos mínimos de legibilidad o validez.\n\nSu estado de inscripción ha sido restablecido temporalmente a "Pendiente de Datos y Docs".\n\nPor favor, ingrese al portal con su usuario y legajo a la brevedad para revisar la observación, corregir el archivo y volver a cargarlo. Una vez que vuelva a enviar la documentación completa y esta sea aprobada por los evaluadores, se habilitará y asignará automáticamente su turno para la capacitación teórica.\n\nAtentamente,\nLicencia Interna`;
+    sendRealEmailViaAPI(op.email, mailSubject, mailBody);
     
     // Auto-eliminar después de 15 segundos
     setTimeout(() => {
@@ -1574,6 +1610,11 @@ function simulateEmailPracticalFail(op) {
     
     document.body.appendChild(emailBox);
     
+    // Disparar el envío real
+    const mailSubject = `Reprobación de Examen Práctico - Licencia Interna de Manejo SLI`;
+    const mailBody = `Estimado/a ${op.nombre},\n\nLe informamos que el resultado de su evaluación práctica de manejo ha sido registrado como "Recuperar" (No Aprobado).\n\nEste es su intento 1 de un máximo de 2 para la licencia Nro. ${op.licenciaNacional}.\n\nPor favor, coordine a la brevedad una nueva fecha de evaluación práctica con su supervisor o instructor práctico para poder completar su habilitación.\n\nAtentamente,\nLicencia Interna`;
+    sendRealEmailViaAPI(op.email, mailSubject, mailBody);
+    
     setTimeout(() => {
         if (document.getElementById('simulated-email-box') === emailBox) {
             emailBox.style.animation = 'fadeOut 0.5s ease-in';
@@ -1625,6 +1666,11 @@ function simulateEmailMaxAttemptsExceeded(op) {
     `;
     
     document.body.appendChild(emailBox);
+    
+    // Disparar el envío real
+    const mailSubject = `TRÁMITE REVERTIDO - Límite de Intentos Excedido`;
+    const mailBody = `Estimado/a ${op.nombre},\n\nLe informamos que ha reprobado por segunda vez la evaluación práctica de manejo correspondiente a la licencia Nro. ${op.licenciaNacional}.\n\nDe acuerdo con la normativa corporativa, se ha superado el límite máximo de 2 intentos permitidos, por lo que su trámite completo ha sido anulado y restablecido a la fase inicial. Deberá comenzar el proceso nuevamente cargando los requisitos.\n\nAtentamente,\nLicencia Interna`;
+    sendRealEmailViaAPI(op.email, mailSubject, mailBody);
     
     setTimeout(() => {
         if (document.getElementById('simulated-email-box') === emailBox) {
