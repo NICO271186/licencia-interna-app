@@ -1484,9 +1484,9 @@ function simulateEmailNotification(op, type, docName) {
                 <div><strong>Asunto:</strong> <span style="font-weight: 500;">Rechazo de Documento - Licencia Interna de Manejo SLI</span></div>
             </div>
             <p>Estimado/a <strong>${op.nombre}</strong>,</p>
-            <p>Le informamos que el documento adjunto: <strong>${friendlyDoc}</strong> (<em>${docName}</em>) para su habilitación de manejo ha sido <strong>rechazado</strong> por el evaluador debido a que no cumple con las condiciones requeridas.</p>
-            <p>Su estado de inscripción ha sido restablecido a <strong>"Pendiente de Datos y Docs"</strong>.</p>
-            <p>Por favor, ingrese al portal con su usuario y legajo a la brevedad para volver a cargar la documentación correspondiente.</p>
+            <p>Le informamos que el documento adjunto: <strong>"${friendlyDoc}"</strong> (archivo: <em>${docName}</em>) para su habilitación de manejo ha sido <strong>rechazado</strong> tras la evaluación, debido a que no cumple con los requisitos mínimos de legibilidad o validez.</p>
+            <p>Su estado de inscripción ha sido restablecido temporalmente a <strong>"Pendiente de Datos y Docs"</strong>.</p>
+            <p>Por favor, ingrese al portal con su usuario y legajo a la brevedad para <strong>revisar la observación, corregir el archivo y volver a cargarlo</strong>. Una vez que vuelva a enviar la documentación completa y esta sea aprobada por los evaluadores, se habilitará y asignará automáticamente su turno para la capacitación teórica.</p>
             <p style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
                 * Este es un correo automático generado por el sistema SLI de Newmont Argentina. No responda a este mensaje.
             </p>
