@@ -1496,9 +1496,11 @@ function sendRealEmailViaAPI(toEmail, subject, messageText) {
     .then(response => response.json())
     .then(data => {
         console.log("Correo electrónico real enviado exitosamente:", data);
+        showToast(`Correo enviado a ${toEmail}. Revisa tu bandeja (y spam) para activar FormSubmit.`, 'info');
     })
     .catch(error => {
         console.error("Error al intentar enviar el correo real:", error);
+        showToast('Error al enviar el correo real. Verifica tu conexión.', 'danger');
     });
 }
 
