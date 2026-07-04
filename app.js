@@ -399,6 +399,38 @@ function formatDateString(date) {
 // --- MANEJO DE VISTAS Y RENDERIZACIÓN ---
 
 function renderApp() {
+    // Auto-curación de estado en cada ciclo de renderizado
+    if (Array.isArray(operators)) {
+        let changed = false;
+        operators.forEach(op => {
+            if (op) {
+                if (!op.tipoEquipo) {
+                    op.tipoEquipo = 'livianos';
+                    changed = true;
+                }
+                const hasBaseDocs = op.documentos &&
+                                    op.documentos.licencia && op.documentos.licencia.status === 'aprobado' &&
+                                    op.documentos.foto && op.documentos.foto.status === 'aprobado' &&
+                                    op.documentos.autorizacion && op.documentos.autorizacion.status === 'aprobado';
+                let allDocsApproved = hasBaseDocs;
+                if (op.tipoEquipo === 'pesados') {
+                    const hasCert = op.documentos && op.documentos.certificacion && op.documentos.certificacion.status === 'aprobado';
+                    allDocsApproved = hasBaseDocs && hasCert;
+                }
+                
+                if (allDocsApproved && (op.estadoFinal === 'documentos_cargados' || op.estadoFinal === 'inscrito')) {
+                    console.log(`[Auto-Curación] Asignando turno a ${op.nombre} (Legajo: ${op.legajo}) por documentos aprobados.`);
+                    op.estadoFinal = 'turno_asignado';
+                    op.docsApprovedAt = op.docsApprovedAt || new Date().toISOString();
+                    changed = true;
+                }
+            }
+        });
+        if (changed) {
+            saveOperatorsToStorage();
+        }
+    }
+
     // 1. Verificar si hay usuario logueado
     if (!currentUser) {
         document.body.classList.add('not-logged-in');
