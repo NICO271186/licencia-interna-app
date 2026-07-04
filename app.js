@@ -209,14 +209,42 @@ function loadState() {
         operators = [...mockOperators];
     }
 
-    // Saneamiento de operadores (migración)
+    // Saneamiento de operadores (migración y auto-curación)
     if (Array.isArray(operators)) {
+        let needsSave = false;
         operators.forEach(op => {
             if (op) {
-                if (!op.tipoEquipo) op.tipoEquipo = 'livianos';
-                if (!op.documentos) op.documentos = {};
+                if (!op.tipoEquipo) {
+                    op.tipoEquipo = 'livianos';
+                    needsSave = true;
+                }
+                if (!op.documentos) {
+                    op.documentos = {};
+                    needsSave = true;
+                }
+                
+                // Auto-curación para operadores con documentos aprobados colgados en revisión
+                if (op.estadoFinal === 'documentos_cargados') {
+                    const hasBaseDocs = op.documentos.licencia && op.documentos.licencia.status === 'aprobado' &&
+                                        op.documentos.foto && op.documentos.foto.status === 'aprobado' &&
+                                        op.documentos.autorizacion && op.documentos.autorizacion.status === 'aprobado';
+                    let allDocsApproved = hasBaseDocs;
+                    if (op.tipoEquipo === 'pesados') {
+                        const hasCert = op.documentos.certificacion && op.documentos.certificacion.status === 'aprobado';
+                        allDocsApproved = hasBaseDocs && hasCert;
+                    }
+                    
+                    if (allDocsApproved) {
+                        op.estadoFinal = 'turno_asignado';
+                        op.docsApprovedAt = op.docsApprovedAt || op.createdAt || new Date().toISOString();
+                        needsSave = true;
+                    }
+                }
             }
         });
+        if (needsSave) {
+            saveOperatorsToStorage();
+        }
     } else {
         operators = [...mockOperators];
     }
@@ -2096,12 +2124,23 @@ function recalculateAuthorization(op) {
                         op.documentos.foto && op.documentos.foto.status === 'aprobado' &&
                         op.documentos.autorizacion && op.documentos.autorizacion.status === 'aprobado';
                         
+    let allDocsApproved = hasBaseDocs;
     if (op.tipoEquipo === 'pesados') {
         const hasCert = op.documentos && op.documentos.certificacion && op.documentos.certificacion.status === 'aprobado';
-        const isAuthorized = hasBaseDocs && hasCert && op.estadoTeorico === 'aprobado';
+        allDocsApproved = hasBaseDocs && hasCert;
+    }
+    
+    // Auto-curación para operadores con documentos aprobados colgados en revisión
+    if (op.estadoFinal === 'documentos_cargados' && allDocsApproved) {
+        op.estadoFinal = 'turno_asignado';
+        op.docsApprovedAt = op.docsApprovedAt || new Date().toISOString();
+    }
+    
+    if (op.tipoEquipo === 'pesados') {
+        const isAuthorized = allDocsApproved && op.estadoTeorico === 'aprobado';
         op.autorizacionFinal = isAuthorized ? 'Autorizado' : 'No Autorizado';
     } else {
-        const isAuthorized = hasBaseDocs && op.estadoTeorico === 'aprobado' && op.estadoPractico === 'ok';
+        const isAuthorized = allDocsApproved && op.estadoTeorico === 'aprobado' && op.estadoPractico === 'ok';
         op.autorizacionFinal = isAuthorized ? 'Autorizado' : 'No Autorizado';
     }
 }
