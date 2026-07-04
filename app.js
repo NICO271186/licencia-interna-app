@@ -335,9 +335,9 @@ function getAvailableTrainingFriday(operatorId, registrationDateStr) {
     while (true) {
         const scheduledCount = operators.filter(op => {
             if (op.id === operatorId) return false;
-            if (op.estadoFinal === 'inscrito') return false; // Aún no aceptado
+            if (op.estadoFinal === 'inscrito' || op.estadoFinal === 'documentos_cargados') return false; // Aún no aceptado/aprobado
             
-            const opFriday = calculateNextFriday(op.createdAt);
+            const opFriday = calculateNextFriday(op.docsApprovedAt || op.createdAt);
             return formatDateString(opFriday) === formatDateString(candidateFriday);
         }).length;
         
@@ -498,7 +498,7 @@ function updateQuotaWidgets() {
 // Actualizar estadísticas rápidas del dashboard (Supervisor/Admin)
 function updateStatsDashboard() {
     const total = operators.length;
-    const docsPending = operators.filter(op => op.estadoFinal === 'inscrito').length;
+    const docsPending = operators.filter(op => op.estadoFinal === 'inscrito' || op.estadoFinal === 'documentos_cargados').length;
     const theoryPending = operators.filter(op => op.estadoFinal === 'turno_asignado').length;
     const okPractico = operators.filter(op => op.estadoFinal === 'teorico_aprobado').length;
     
@@ -612,7 +612,7 @@ function updateStepperVisual(op) {
     // Step 1: Inscripción (Siempre completado para un operador guardado)
     document.getElementById('step-1').classList.add('completed');
     
-    if (op.estadoFinal === 'inscrito') {
+    if (op.estadoFinal === 'inscrito' || op.estadoFinal === 'documentos_cargados') {
         document.getElementById('step-2').classList.add('active');
     } else if (op.estadoFinal === 'turno_asignado') {
         document.getElementById('step-2').classList.add('completed');
@@ -661,15 +661,21 @@ function updateOperatorStatusPanel(op) {
     
     // --- EVALUAR ESTADO ---
     
-    // Si tiene documentos cargados o más adelante, se calcula y muestra el turno
-    if (op.estadoFinal !== 'inscrito') {
+    // Si tiene el turno asignado o posterior (es decir, ya fue aprobado)
+    const hasTurno = op.estadoFinal !== 'inscrito' && op.estadoFinal !== 'documentos_cargados';
+    if (hasTurno) {
         blockTurno.classList.remove('disabled');
-        const nextFriday = getAvailableTrainingFriday(op.id, op.createdAt);
+        const trainingBaseDate = op.docsApprovedAt || op.createdAt;
+        const nextFriday = getAvailableTrainingFriday(op.id, trainingBaseDate);
         apptDay.innerText = nextFriday.getDate();
         apptDateText.innerText = formatDateString(nextFriday);
     } else {
         apptDay.innerText = '--';
-        apptDateText.innerText = '--/--/----';
+        if (op.estadoFinal === 'documentos_cargados') {
+            apptDateText.innerHTML = '<span style="font-size:0.75rem; color:var(--warning); font-weight:600;">Documentos en revisión por Instructores</span>';
+        } else {
+            apptDateText.innerText = '--/--/----';
+        }
     }
     
     // Si ya tiene asignado turno o examen
@@ -792,8 +798,8 @@ function updateOperatorStatusPanel(op) {
             let licenseStatusText = '';
             if (op.estadoFinal === 'inscrito') {
                 licenseStatusText = 'Licencia Digital: Pendiente subir requisitos';
-            } else if (op.estadoFinal === 'documentos_completos') {
-                licenseStatusText = 'Licencia Digital: Esperando capacitación';
+            } else if (op.estadoFinal === 'documentos_cargados') {
+                licenseStatusText = 'Licencia Digital: Pendiente aprobación de documentos';
             } else if (op.estadoFinal === 'turno_asignado') {
                 licenseStatusText = 'Licencia Digital: Pendiente examen teórico';
             } else if (op.estadoFinal === 'teorico_reprobado') {
@@ -906,11 +912,10 @@ function handleSaveOperatorData(e) {
     op.licenciaNacional = licencia;
     op.email = email;
     op.docsUploadedAt = new Date().toISOString();
-    op.estadoFinal = 'turno_asignado'; // Automáticamente pasa a tener turno
+    op.estadoFinal = 'documentos_cargados'; // Pasa a revisión de documentos
     
     saveOperatorsToStorage();
-    const assignedFriday = getAvailableTrainingFriday(op.id, op.createdAt);
-    showToast(`Datos y documentación guardados. Turno asignado para el Viernes ${formatDateString(assignedFriday)} de 08:30 a 12:30 hs.`, 'success');
+    showToast('Datos y documentación guardados. Tu perfil se encuentra en revisión para la asignación de turno.', 'success');
     renderApp();
 }
 
@@ -1082,23 +1087,30 @@ function renderOperatorsTable() {
         
         // Documents uploaded
         const tdDocs = document.createElement('td');
-        if (op.docsUploadedAt) {
-            tdDocs.innerHTML = `<span class="badge badge-success">Completo</span><br><span style="font-size:0.7rem; color:var(--text-muted);">${formatDateString(op.docsUploadedAt)}</span>`;
-        } else {
-            // Contar cuántos tiene
+        if (op.estadoFinal === 'inscrito') {
             const count = op.documentos ? Object.keys(op.documentos).length : 0;
             const totalDocs = op.tipoEquipo === 'pesados' ? 4 : 3;
             tdDocs.innerHTML = `<span class="badge badge-warning">${count} / ${totalDocs} cargados</span>`;
+        } else if (op.estadoFinal === 'documentos_cargados') {
+            tdDocs.innerHTML = `<span class="badge badge-warning" style="background-color: var(--warning); color: var(--bg-dark);">En Revisión</span><br><span style="font-size:0.7rem; color:var(--text-muted);">${formatDateString(op.docsUploadedAt)}</span>`;
+        } else {
+            tdDocs.innerHTML = `<span class="badge badge-success">Aprobados</span><br><span style="font-size:0.7rem; color:var(--text-muted);">${formatDateString(op.docsUploadedAt)}</span>`;
         }
         tr.appendChild(tdDocs);
         
         // Training date
         const tdTraining = document.createElement('td');
-        if (op.estadoFinal !== 'inscrito') {
-            const friday = getAvailableTrainingFriday(op.id, op.createdAt);
+        const hasTurno = op.estadoFinal !== 'inscrito' && op.estadoFinal !== 'documentos_cargados';
+        if (hasTurno) {
+            const trainingBaseDate = op.docsApprovedAt || op.createdAt;
+            const friday = getAvailableTrainingFriday(op.id, trainingBaseDate);
             tdTraining.innerHTML = `<strong>${formatDateString(friday)}</strong><br><span style="font-size:0.7rem;">08:30 - 12:30 hs</span>`;
         } else {
-            tdTraining.innerHTML = `<span class="text-muted">Pendiente Docs</span>`;
+            if (op.estadoFinal === 'documentos_cargados') {
+                tdTraining.innerHTML = `<span class="text-warning" style="font-size:0.8rem; font-weight:600;">Esperando Aprobación</span>`;
+            } else {
+                tdTraining.innerHTML = `<span class="text-muted">Pendiente Docs</span>`;
+            }
         }
         tr.appendChild(tdTraining);
         
@@ -1361,15 +1373,47 @@ function renderModalDocumentCards(op) {
     });
 }
 
+function checkAllRequiredDocsApproved(op) {
+    const hasBaseDocs = op.documentos && 
+                        op.documentos.licencia && op.documentos.licencia.status === 'aprobado' &&
+                        op.documentos.foto && op.documentos.foto.status === 'aprobado' &&
+                        op.documentos.autorizacion && op.documentos.autorizacion.status === 'aprobado';
+                        
+    if (op.tipoEquipo === 'pesados') {
+        const hasCert = op.documentos && op.documentos.certificacion && op.documentos.certificacion.status === 'aprobado';
+        return hasBaseDocs && hasCert;
+    }
+    return hasBaseDocs;
+}
+
 function handleApproveDocument(opId, type) {
     const op = operators.find(o => o.id === opId);
     if (!op) return;
     
     if (op.documentos && op.documentos[type]) {
         op.documentos[type].status = 'aprobado';
+        
+        // Verificar si completó la aprobación de todos los documentos requeridos
+        let isTransitioned = false;
+        if (op.estadoFinal === 'documentos_cargados') {
+            const allApproved = checkAllRequiredDocsApproved(op);
+            if (allApproved) {
+                op.estadoFinal = 'turno_asignado';
+                op.docsApprovedAt = new Date().toISOString();
+                isTransitioned = true;
+            }
+        }
+        
         recalculateAuthorization(op);
         saveOperatorsToStorage();
-        showToast(`Documento "${getDocTypeFriendlyName(type)}" aprobado`, 'success');
+        
+        if (isTransitioned) {
+            const trainingBaseDate = op.docsApprovedAt || op.createdAt;
+            const assignedFriday = getAvailableTrainingFriday(op.id, trainingBaseDate);
+            showToast(`¡Toda la documentación ha sido aprobada! Turno asignado para el Viernes ${formatDateString(assignedFriday)}.`, 'success');
+        } else {
+            showToast(`Documento "${getDocTypeFriendlyName(type)}" aprobado`, 'success');
+        }
         
         // Re-renderizar modal y dashboard
         renderModalDocumentCards(op);
