@@ -522,6 +522,21 @@ function renderOperatorView() {
     const op = operators.find(o => o.id === currentSelectedOperatorId);
     if (!op) return;
     
+    // Mostrar notificaciones pendientes de correo si existieran
+    if (op.pendingNotifications && op.pendingNotifications.length > 0) {
+        op.pendingNotifications.forEach(notif => {
+            if (notif.type === 'rejection') {
+                simulateEmailNotification(op, notif.docType, notif.docName);
+            } else if (notif.type === 'practical_fail') {
+                simulateEmailPracticalFail(op);
+            } else if (notif.type === 'max_attempts') {
+                simulateEmailMaxAttemptsExceeded(op);
+            }
+        });
+        op.pendingNotifications = [];
+        saveOperatorsToStorage();
+    }
+    
     // Rellenar datos del formulario
     document.getElementById('op-nombre').value = op.nombre || '';
     document.getElementById('op-legajo').value = op.legajo || '';
@@ -1436,10 +1451,18 @@ function handleRejectDocument(opId, type) {
         op.estadoFinal = 'inscrito'; // Vuelve a inscripto
         recalculateAuthorization(op);
         
+        // Agregar a la cola de notificaciones para el operador
+        op.pendingNotifications = op.pendingNotifications || [];
+        op.pendingNotifications.push({
+            type: 'rejection',
+            docType: type,
+            docName: docName
+        });
+        
         saveOperatorsToStorage();
         showToast(`Documento "${getDocTypeFriendlyName(type)}" rechazado. Notificación enviada.`, 'warning');
         
-        // 3. Simular el envío de correo electrónico al email del operador
+        // 3. Simular el envío de correo electrónico al email del operador (inmediato para supervisor)
         simulateEmailNotification(op, type, docName);
         
         // Re-renderizar modal y dashboard
@@ -2095,6 +2118,12 @@ function handleSavePractica(e) {
             licenseAttempts[lic] = 0;
             saveLicenseAttempts();
             
+            // Agregar a la cola de notificaciones para el operador
+            op.pendingNotifications = op.pendingNotifications || [];
+            op.pendingNotifications.push({
+                type: 'max_attempts'
+            });
+            
             saveOperatorsToStorage();
             closeModal();
             renderApp();
@@ -2106,6 +2135,13 @@ function handleSavePractica(e) {
             op.estadoPractico = 'recuperar';
             delete op.licenciaEmitida;
             recalculateAuthorization(op);
+            
+            // Agregar a la cola de notificaciones para el operador
+            op.pendingNotifications = op.pendingNotifications || [];
+            op.pendingNotifications.push({
+                type: 'practical_fail'
+            });
+            
             saveOperatorsToStorage();
             closeModal();
             renderApp();
@@ -2914,6 +2950,14 @@ function initializeEventListeners() {
     document.getElementById('btn-cancel-user-modal').addEventListener('click', closeUserModal);
     document.getElementById('form-user-edit').addEventListener('submit', handleSaveUser);
     document.getElementById('btn-delete-user').addEventListener('click', handleDeleteUser);
+    
+    // Sincronizar en tiempo real entre pestañas usando el evento 'storage' de HTML5
+    window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY) {
+            loadState();
+            renderApp();
+        }
+    });
 }
 
 // --- GESTIÓN DE PERSONAL / USUARIOS (ADMINISTRADORES) ---
