@@ -3106,6 +3106,8 @@ function initializeEventListeners() {
     // 8. Botones de Acciones de Config / Excel (Admin/Supervisor)
     document.getElementById('btn-export-excel').addEventListener('click', handleExportExcel);
     document.getElementById('btn-update-quota').addEventListener('click', handleUpdateQuota);
+    document.getElementById('btn-export-db').addEventListener('click', handleExportDatabase);
+    document.getElementById('btn-import-db').addEventListener('click', handleImportDatabase);
 
     // 9. Gestión de Personal (Solo Administradores)
     document.querySelectorAll('.dash-tab-btn').forEach(btn => {
@@ -3317,5 +3319,43 @@ function switchDashTab(tabName) {
             staffSec.classList.remove('hidden');
         }
         renderStaffTable();
+    }
+}
+
+// --- EXPORTACIÓN E IMPORTACIÓN MANUAL DE LA BASE DE DATOS (MIGRACIÓN / LAN) ---
+function handleExportDatabase() {
+    const jsonStr = JSON.stringify(operators, null, 2);
+    
+    // Intentar copiar directamente al portapapeles
+    navigator.clipboard.writeText(jsonStr).then(() => {
+        showToast("Base de datos copiada al portapapeles en formato de texto.", "success");
+        alert("¡Base de datos copiada con éxito!\n\nSe ha copiado el texto de la base de datos al portapapeles. Pega este texto en el chat, envíatelo por correo o WhatsApp a tu computadora, y luego impórtalo en la computadora usando el botón 'Importar DB'.");
+    }).catch(err => {
+        // Fallback abriendo ventana
+        const w = window.open();
+        w.document.write("<h3>Copie todo el texto a continuación:</h3><pre>" + jsonStr + "</pre>");
+        w.document.close();
+        alert("No se pudo copiar automáticamente. Se abrió una pestaña nueva con el texto de la base de datos para que lo selecciones y copies manualmente.");
+    });
+}
+
+function handleImportDatabase() {
+    const text = prompt("Pega aquí el texto de la base de datos exportada (JSON):");
+    if (text === null || text.trim() === "") return;
+    
+    try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) {
+            if (confirm(`¿Estás seguro de que deseas importar ${parsed.length} operadores? Esto sobrescribirá los datos locales y sincronizará el servidor.`)) {
+                operators = parsed;
+                saveOperatorsToStorage(); // Guarda en localStorage y sincroniza con el servidor
+                renderApp();
+                showToast("Base de datos importada y sincronizada correctamente.", "success");
+            }
+        } else {
+            alert("El texto ingresado no es una base de datos válida (debe ser un arreglo JSON).");
+        }
+    } catch (err) {
+        alert("Error al procesar el texto ingresado. Asegúrate de copiar el texto completo tal cual fue exportado (incluyendo los corchetes [] inicial y final).");
     }
 }
