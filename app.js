@@ -3324,17 +3324,21 @@ function switchDashTab(tabName) {
 
 // --- EXPORTACIÓN E IMPORTACIÓN MANUAL DE LA BASE DE DATOS (MIGRACIÓN / LAN) ---
 function handleExportDatabase() {
-    const jsonStr = JSON.stringify(operators, null, 2);
-    
-    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        navigator.clipboard.writeText(jsonStr).then(() => {
-            showToast("Base de datos copiada al portapapeles en formato de texto.", "success");
-            alert("¡Base de datos copiada con éxito!\n\nSe ha copiado el texto de la base de datos al portapapeles. Pega este texto en tu chat o envíaselo a la computadora por correo/WhatsApp, y luego impórtalo en la computadora usando el botón 'Importar DB'.");
-        }).catch(err => {
-            fallbackExport(jsonStr);
-        });
-    } else {
+    try {
+        if (!operators) {
+            alert("Error: la variable 'operators' está vacía o no existe en la aplicación.");
+            return;
+        }
+        
+        const jsonStr = JSON.stringify(operators, null, 2);
+        
+        if (!jsonStr || jsonStr === "[]") {
+            showToast("Advertencia: base de datos vacía", "warning");
+        }
+        
         fallbackExport(jsonStr);
+    } catch (error) {
+        alert("Ocurrió un error al intentar exportar la base de datos:\n" + error.message + "\n\nPor favor, avísame de este mensaje.");
     }
 }
 
