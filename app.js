@@ -3326,17 +3326,123 @@ function switchDashTab(tabName) {
 function handleExportDatabase() {
     const jsonStr = JSON.stringify(operators, null, 2);
     
-    // Intentar copiar directamente al portapapeles
-    navigator.clipboard.writeText(jsonStr).then(() => {
-        showToast("Base de datos copiada al portapapeles en formato de texto.", "success");
-        alert("¡Base de datos copiada con éxito!\n\nSe ha copiado el texto de la base de datos al portapapeles. Pega este texto en el chat, envíatelo por correo o WhatsApp a tu computadora, y luego impórtalo en la computadora usando el botón 'Importar DB'.");
-    }).catch(err => {
-        // Fallback abriendo ventana
-        const w = window.open();
-        w.document.write("<h3>Copie todo el texto a continuación:</h3><pre>" + jsonStr + "</pre>");
-        w.document.close();
-        alert("No se pudo copiar automáticamente. Se abrió una pestaña nueva con el texto de la base de datos para que lo selecciones y copies manualmente.");
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(jsonStr).then(() => {
+            showToast("Base de datos copiada al portapapeles en formato de texto.", "success");
+            alert("¡Base de datos copiada con éxito!\n\nSe ha copiado el texto de la base de datos al portapapeles. Pega este texto en tu chat o envíaselo a la computadora por correo/WhatsApp, y luego impórtalo en la computadora usando el botón 'Importar DB'.");
+        }).catch(err => {
+            fallbackExport(jsonStr);
+        });
+    } else {
+        fallbackExport(jsonStr);
+    }
+}
+
+function fallbackExport(jsonStr) {
+    // Crear un contenedor de modal flotante en caliente
+    const modalDiv = document.createElement('div');
+    modalDiv.style.position = 'fixed';
+    modalDiv.style.top = '0';
+    modalDiv.style.left = '0';
+    modalDiv.style.width = '100%';
+    modalDiv.style.height = '100%';
+    modalDiv.style.backgroundColor = 'rgba(15, 23, 42, 0.95)';
+    modalDiv.style.zIndex = '999999';
+    modalDiv.style.display = 'flex';
+    modalDiv.style.flexDirection = 'column';
+    modalDiv.style.alignItems = 'center';
+    modalDiv.style.justify = 'center';
+    modalDiv.style.padding = '20px';
+    modalDiv.style.boxSizing = 'border-box';
+    modalDiv.id = 'temp-export-modal';
+
+    const container = document.createElement('div');
+    container.style.backgroundColor = 'var(--card-bg)';
+    container.style.padding = '24px';
+    container.style.borderRadius = '16px';
+    container.style.width = '100%';
+    container.style.maxWidth = '550px';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '16px';
+    container.style.border = '1px solid var(--border-color)';
+    container.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.5)';
+
+    const title = document.createElement('h3');
+    title.innerText = 'Copiar Base de Datos (Segura)';
+    title.style.color = 'var(--text-main)';
+    title.style.margin = '0';
+    title.style.fontSize = '1.3rem';
+    
+    const desc = document.createElement('p');
+    desc.innerText = 'Debido a la seguridad de la red local, por favor presiona "Seleccionar Todo" y copia el texto de abajo manualmente para enviarlo a la computadora:';
+    desc.style.color = 'var(--text-muted)';
+    desc.style.margin = '0';
+    desc.style.fontSize = '0.9rem';
+
+    const textarea = document.createElement('textarea');
+    textarea.value = jsonStr;
+    textarea.style.width = '100%';
+    textarea.style.height = '280px';
+    textarea.style.backgroundColor = '#0b0f19';
+    textarea.style.color = '#38bdf8';
+    textarea.style.border = '1px solid var(--border-color)';
+    textarea.style.borderRadius = '8px';
+    textarea.style.padding = '12px';
+    textarea.style.fontFamily = 'monospace';
+    textarea.style.fontSize = '0.85rem';
+    textarea.style.boxSizing = 'border-box';
+    textarea.readOnly = true;
+
+    // Seleccionar todo al hacer clic
+    textarea.addEventListener('click', () => {
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
     });
+
+    const buttonGroup = document.createElement('div');
+    buttonGroup.style.display = 'flex';
+    buttonGroup.style.gap = '12px';
+    buttonGroup.style.justifyContent = 'flex-end';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn btn-success btn-sm';
+    copyBtn.innerText = 'Seleccionar Todo';
+    copyBtn.style.padding = '8px 16px';
+    copyBtn.addEventListener('click', () => {
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        try {
+            document.execCommand('copy');
+            showToast("¡Copiado al portapapeles!", "success");
+        } catch (err) {
+            showToast("Seleccionado. Copia manualmente usando la opción de copiar de tu teléfono.", "info");
+        }
+    });
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'btn btn-secondary btn-sm';
+    closeBtn.innerText = 'Cerrar';
+    closeBtn.style.padding = '8px 16px';
+    closeBtn.addEventListener('click', () => {
+        document.body.removeChild(modalDiv);
+    });
+
+    buttonGroup.appendChild(copyBtn);
+    buttonGroup.appendChild(closeBtn);
+    
+    container.appendChild(title);
+    container.appendChild(desc);
+    container.appendChild(textarea);
+    container.appendChild(buttonGroup);
+    
+    modalDiv.appendChild(container);
+    document.body.appendChild(modalDiv);
+    
+    // Enfocar y auto-seleccionar
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, 99999);
 }
 
 function handleImportDatabase() {
