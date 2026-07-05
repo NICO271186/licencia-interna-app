@@ -49,6 +49,68 @@ try {
         $method = $parts[0]
         $rawUrl = $parts[1].Split('?')[0]
         
+        # --- API /api/operators para Sincronizar en LAN ---
+        if ($rawUrl -eq '/api/operators') {
+            # Leer el Content-Length de las cabeceras si existiera
+            $contentLength = 0
+            while ($true) {
+                $hdrLine = $reader.ReadLine()
+                if ($null -eq $hdrLine -or $hdrLine.Trim() -eq "") {
+                    break
+                }
+                if ($hdrLine -match "^Content-Length:\s*(\d+)") {
+                    $contentLength = [int]$Matches[1]
+                }
+            }
+            
+            if ($method -eq 'OPTIONS') {
+                $header = "HTTP/1.1 204 No Content`r`nConnection: close`r`nAccess-Control-Allow-Origin: *`r`nAccess-Control-Allow-Methods: GET, POST, OPTIONS`r`nAccess-Control-Allow-Headers: Content-Type`r`n`r`n"
+                $headerBytes = [System.Text.Encoding]::UTF8.GetBytes($header)
+                $stream.Write($headerBytes, 0, $headerBytes.Length)
+                $stream.Flush()
+                $client.Close()
+                continue
+            }
+            
+            if ($method -eq 'POST' -or $method -eq 'PUT') {
+                $body = ""
+                if ($contentLength -gt 0) {
+                    $buffer = New-Object char[] $contentLength
+                    $read = $reader.Read($buffer, 0, $contentLength)
+                    $body = New-Object string ($buffer, 0, $read)
+                }
+                
+                [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot "operators.json"), $body, [System.Text.Encoding]::UTF8)
+                
+                $resText = '{"status":"ok"}'
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes($resText)
+                $header = "HTTP/1.1 200 OK`r`nContent-Type: application/json; charset=utf-8`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`nAccess-Control-Allow-Origin: *`r`n`r`n"
+                $headerBytes = [System.Text.Encoding]::UTF8.GetBytes($header)
+                $stream.Write($headerBytes, 0, $headerBytes.Length)
+                $stream.Write($bytes, 0, $bytes.Length)
+                $stream.Flush()
+                $client.Close()
+                continue
+            }
+            
+            if ($method -eq 'GET') {
+                $dbPath = Join-Path $PSScriptRoot "operators.json"
+                if (Test-Path $dbPath -PathType Leaf) {
+                    $bytes = [System.IO.File]::ReadAllBytes($dbPath)
+                } else {
+                    $bytes = [System.Text.Encoding]::UTF8.GetBytes("[]")
+                }
+                
+                $header = "HTTP/1.1 200 OK`r`nContent-Type: application/json; charset=utf-8`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`nAccess-Control-Allow-Origin: *`r`n`r`n"
+                $headerBytes = [System.Text.Encoding]::UTF8.GetBytes($header)
+                $stream.Write($headerBytes, 0, $headerBytes.Length)
+                $stream.Write($bytes, 0, $bytes.Length)
+                $stream.Flush()
+                $client.Close()
+                continue
+            }
+        }
+        
         if ($rawUrl -eq '/' -or $rawUrl -eq '') {
             $rawUrl = '/index.html'
         }

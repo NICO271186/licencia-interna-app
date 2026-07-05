@@ -164,12 +164,18 @@ let currentUser = null; // Guardará el usuario actual logueado: { name, legajo,
 document.addEventListener('DOMContentLoaded', () => {
     try {
         loadState();
+        loadStateFromServer();
         initializeEventListeners();
         
         // Forzar que la app siempre inicie en la pestaña de Acceso (con contraseña)
         toggleLoginForms('login');
         
         renderApp();
+        
+        // Polling en segundo plano para sincronizar datos en red local LAN cada 3 segundos
+        setInterval(() => {
+            loadStateFromServer();
+        }, 3000);
         
         if (currentUser) {
             showToast(`Sesión activa: ${currentUser.name} (${currentUser.role.toUpperCase()})`, 'info');
@@ -305,6 +311,45 @@ function loadState() {
 
 function saveOperatorsToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(operators));
+    saveOperatorsToServer();
+}
+
+function saveOperatorsToServer() {
+    if (location.hostname.includes('github.io')) return;
+    
+    fetch('/api/operators', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(operators)
+    })
+    .then(res => res.json())
+    .then(data => console.log("[Sincronización LAN] Base de datos guardada en el servidor local:", data))
+    .catch(err => console.error("[Sincronización LAN] Error al guardar en el servidor local:", err));
+}
+
+function loadStateFromServer() {
+    if (location.hostname.includes('github.io')) return;
+    
+    fetch('/api/operators')
+        .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("No API");
+        })
+        .then(data => {
+            if (Array.isArray(data) && data.length > 0) {
+                const oldDataStr = JSON.stringify(operators);
+                const newDataStr = JSON.stringify(data);
+                if (oldDataStr !== newDataStr) {
+                    console.log("[Sincronización LAN] Nuevos datos cargados del servidor local:", data);
+                    operators = data;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(operators));
+                    renderApp();
+                }
+            }
+        })
+        .catch(err => {
+            console.warn("[Sincronización LAN] No se pudo conectar con el servidor local para cargar datos:", err);
+        });
 }
 
 function saveConfigToStorage() {
