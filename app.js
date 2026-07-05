@@ -315,22 +315,28 @@ function saveOperatorsToStorage() {
 }
 
 function saveOperatorsToServer() {
-    if (location.hostname.includes('github.io')) return;
+    let url = '/api/operators';
+    if (location.hostname.includes('github.io')) {
+        url = 'http://localhost:8080/api/operators';
+    }
     
-    fetch('/api/operators', {
+    fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(operators)
     })
     .then(res => res.json())
-    .then(data => console.log("[Sincronización LAN] Base de datos guardada en el servidor local:", data))
-    .catch(err => console.error("[Sincronización LAN] Error al guardar en el servidor local:", err));
+    .then(data => console.log("[Sincronización LAN] Base de datos guardada en el servidor:", data))
+    .catch(err => console.warn("[Sincronización LAN] Servidor local no disponible para guardar cambios."));
 }
 
 function loadStateFromServer() {
-    if (location.hostname.includes('github.io')) return;
+    let url = '/api/operators';
+    if (location.hostname.includes('github.io')) {
+        url = 'http://localhost:8080/api/operators';
+    }
     
-    fetch('/api/operators')
+    fetch(url)
         .then(res => {
             if (res.ok) return res.json();
             throw new Error("No API");
@@ -340,7 +346,7 @@ function loadStateFromServer() {
                 const oldDataStr = JSON.stringify(operators);
                 const newDataStr = JSON.stringify(data);
                 if (oldDataStr !== newDataStr) {
-                    console.log("[Sincronización LAN] Nuevos datos cargados del servidor local:", data);
+                    console.log("[Sincronización LAN] Nuevos datos cargados del servidor:", data);
                     operators = data;
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(operators));
                     renderApp();
@@ -348,7 +354,7 @@ function loadStateFromServer() {
             }
         })
         .catch(err => {
-            console.warn("[Sincronización LAN] No se pudo conectar con el servidor local para cargar datos:", err);
+            console.warn("[Sincronización LAN] Servidor local no disponible. Usando datos de este navegador:", err.message);
         });
 }
 
