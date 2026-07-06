@@ -15,6 +15,10 @@ try {
         $wifiIP = "172.24.6.141"
     }
 
+    # Guardar la IP detectada en un archivo de configuración para que los celulares puedan localizar el servidor
+    $ipJson = '{"ip":"' + $wifiIP + '"}'
+    [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot "server_ip.json"), $ipJson, [System.Text.Encoding]::UTF8)
+
     $server.Start()
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "      SERVIDOR WEB ACTIVO - LICENCIA INTERNA APP" -ForegroundColor Green

@@ -158,30 +158,50 @@ let appConfig = {};
 let currentRole = 'operador'; // 'operador' | 'supervisor' | 'instructor_tecnico' | 'admin'
 let currentSelectedOperatorId = null; // ID del operador logueado (si es operador)
 let activeEditingOperatorId = null; // Para el modal de edición/calificación
-let currentUser = null; // Guardará el usuario actual logueado: { name, legajo, role, id }
+// Servidor local IP para sincronización de red LAN/Wi-Fi
+let localServerIP = 'localhost';
+
+function loadServerIP() {
+    return fetch('server_ip.json?t=' + Date.now())
+        .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("No IP file");
+        })
+        .then(data => {
+            if (data && data.ip) {
+                localServerIP = data.ip;
+                console.log("[Sincronización LAN] IP del servidor local obtenida:", localServerIP);
+            }
+        })
+        .catch(err => {
+            console.warn("[Sincronización LAN] No se pudo cargar la IP del servidor (usando localhost):", err.message);
+        });
+}
 
 // --- INICIALIZACION ---
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        loadState();
-        loadStateFromServer();
-        initializeEventListeners();
-        
-        // Forzar que la app siempre inicie en la pestaña de Acceso (con contraseña)
-        toggleLoginForms('login');
-        
-        renderApp();
-        
-        // Polling en segundo plano para sincronizar datos en red local LAN cada 3 segundos
-        setInterval(() => {
+        loadServerIP().finally(() => {
+            loadState();
             loadStateFromServer();
-        }, 3000);
-        
-        if (currentUser) {
-            showToast(`Sesión activa: ${currentUser.name} (${currentUser.role.toUpperCase()})`, 'info');
-        } else {
-            showToast('Ingrese sus credenciales para acceder.', 'info');
-        }
+            initializeEventListeners();
+            
+            // Forzar que la app siempre inicie en la pestaña de Acceso (con contraseña)
+            toggleLoginForms('login');
+            
+            renderApp();
+            
+            // Polling en segundo plano para sincronizar datos en red local LAN cada 3 segundos
+            setInterval(() => {
+                loadStateFromServer();
+            }, 3000);
+            
+            if (currentUser) {
+                showToast(`Sesión activa: ${currentUser.name} (${currentUser.role.toUpperCase()})`, 'info');
+            } else {
+                showToast('Ingrese sus credenciales para acceder.', 'info');
+            }
+        });
     } catch (error) {
         const errorDiv = document.createElement('div');
         errorDiv.style.position = 'fixed';
@@ -317,7 +337,7 @@ function saveOperatorsToStorage() {
 function saveOperatorsToServer() {
     let url = '/api/operators';
     if (location.hostname.includes('github.io')) {
-        url = 'http://localhost:8080/api/operators';
+        url = `http://${localServerIP}:8080/api/operators`;
     }
     
     fetch(url, {
@@ -332,8 +352,9 @@ function saveOperatorsToServer() {
 
 function loadStateFromServer() {
     let url = '/api/operators';
-    if (location.hostname.includes('github.io')) {
-        url = 'http://localhost:8080/api/operators';
+    const isGitHub = location.hostname.includes('github.io');
+    if (isGitHub) {
+        url = `http://${localServerIP}:8080/api/operators`;
     }
     
     fetch(url)
@@ -343,19 +364,40 @@ function loadStateFromServer() {
         })
         .then(data => {
             if (Array.isArray(data) && data.length > 0) {
-                const oldDataStr = JSON.stringify(operators);
-                const newDataStr = JSON.stringify(data);
-                if (oldDataStr !== newDataStr) {
-                    console.log("[Sincronización LAN] Nuevos datos cargados del servidor:", data);
-                    operators = data;
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(operators));
-                    renderApp();
-                }
+                updateOperatorsIfChanged(data, "[Sincronización LAN]");
             }
         })
         .catch(err => {
-            console.warn("[Sincronización LAN] Servidor local no disponible. Usando datos de este navegador:", err.message);
+            // Fallback si el servidor local no está disponible
+            if (isGitHub) {
+                fetch('operators.json?t=' + Date.now())
+                    .then(res => {
+                        if (res.ok) return res.json();
+                        throw new Error("No static file");
+                    })
+                    .then(data => {
+                        if (Array.isArray(data) && data.length > 0) {
+                            updateOperatorsIfChanged(data, "[Repositorio GitHub]");
+                        }
+                    })
+                    .catch(err2 => {
+                        console.warn("[Repositorio GitHub] Tampoco se pudo cargar operators.json estático:", err2.message);
+                    });
+            } else {
+                console.warn("[Sincronización LAN] Servidor local no disponible. Usando datos de este navegador:", err.message);
+            }
         });
+}
+
+function updateOperatorsIfChanged(data, sourceLabel) {
+    const oldDataStr = JSON.stringify(operators);
+    const newDataStr = JSON.stringify(data);
+    if (oldDataStr !== newDataStr) {
+        console.log(`${sourceLabel} Nuevos datos cargados:`, data);
+        operators = data;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(operators));
+        renderApp();
+    }
 }
 
 function saveConfigToStorage() {
