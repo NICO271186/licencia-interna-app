@@ -172,10 +172,22 @@ function loadServerIP() {
                 localServerIP = data.ip;
                 console.log("[Sincronización LAN] IP del servidor local obtenida:", localServerIP);
             }
+            updateQRUI();
         })
         .catch(err => {
             console.warn("[Sincronización LAN] No se pudo cargar la IP del servidor (usando localhost):", err.message);
+            updateQRUI();
         });
+}
+
+function updateQRUI() {
+    const imgQr = document.getElementById('img-qr-local');
+    const labelUrl = document.getElementById('label-qr-url');
+    if (imgQr && labelUrl) {
+        const localUrl = `http://${localServerIP}:8080/`;
+        imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(localUrl)}`;
+        labelUrl.innerText = localUrl;
+    }
 }
 
 // --- INICIALIZACION ---

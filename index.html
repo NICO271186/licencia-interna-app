@@ -19,7 +19,7 @@
             <div class="login-brand">
                 <img src="newmont_logo.jpg" alt="Newmont Argentina" class="login-logo">
                 <h2>SLI - Licencia de Conducción Interna</h2>
-                <div style="font-size: 0.75rem; background-color: var(--primary); color: white; padding: 3px 10px; border-radius: 99px; display: inline-block; font-weight: bold; margin-top: 5px; margin-bottom: 10px;">Versión 2.7 (Auto LAN Sync)</div>
+                <div style="font-size: 0.75rem; background-color: var(--primary); color: white; padding: 3px 10px; border-radius: 99px; display: inline-block; font-weight: bold; margin-top: 5px; margin-bottom: 10px;">Versión 2.8 (Dynamic LAN QR)</div>
                 <p>Ingresa tus credenciales para acceder al sistema</p>
             </div>
 
@@ -105,7 +105,7 @@
 
             <!-- Info Panel -->
             <div id="info-panel" class="hidden">
-                <div class="info-credits-card">
+                <div class="info-credits-card" style="display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;">
                     <div class="info-credits-icon">
                         <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--warning)" stroke-width="1.5">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -113,9 +113,17 @@
                             <line x1="12" y1="8" x2="12.01" y2="8"></line>
                         </svg>
                     </div>
-                    <h3>Reseña Institucional</h3>
-                    <p class="credits-text">Aplicación creada por <strong>Nicolás Márquez</strong></p>
-                    <span class="credits-footer">Todos los derechos reservados &copy; 2026</span>
+                    <h3 style="margin: 0; color: var(--text-main); font-size: 1.2rem;">Acceso Móvil (Red Local)</h3>
+                    <p class="description" style="color: var(--text-muted); font-size: 0.8rem; max-width: 280px; margin: 0; line-height: 1.4;">
+                        Escanea este código QR con la cámara de tu celular conectado al Wi-Fi de la oficina para ingresar al sistema:
+                    </p>
+                    <div style="background-color: white; padding: 10px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                        <img id="img-qr-local" src="" alt="Cargando QR..." style="width: 170px; height: 170px; display: block;">
+                    </div>
+                    <span id="label-qr-url" style="font-size: 0.8rem; font-weight: 600; color: var(--warning); font-family: monospace;">--</span>
+                    <hr style="width: 100%; border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 4px 0;">
+                    <p class="credits-text" style="font-size: 0.85rem; margin: 0; color: var(--text-main);">Aplicación creada por <strong>Nicolás Márquez</strong></p>
+                    <span class="credits-footer" style="font-size: 0.75rem; color: var(--text-muted);">Todos los derechos reservados &copy; 2026</span>
                 </div>
             </div>
         </div>
@@ -798,6 +806,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=2.7"></script>
+    <script src="app.js?v=2.8"></script>
 </body>
 </html>
