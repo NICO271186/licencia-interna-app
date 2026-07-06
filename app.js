@@ -181,7 +181,7 @@ function loadServerIP() {
 // --- INICIALIZACION ---
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        loadServerIP().finally(() => {
+        const proceedInit = () => {
             loadState();
             loadStateFromServer();
             initializeEventListeners();
@@ -201,6 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 showToast('Ingrese sus credenciales para acceder.', 'info');
             }
+        };
+
+        loadServerIP().then(proceedInit).catch(err => {
+            console.warn("[Inicialización] Error al cargar la IP de red local, continuando:", err);
+            proceedInit();
         });
     } catch (error) {
         const errorDiv = document.createElement('div');

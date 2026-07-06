@@ -79,9 +79,16 @@ try {
             if ($method -eq 'POST' -or $method -eq 'PUT') {
                 $body = ""
                 if ($contentLength -gt 0) {
-                    $buffer = New-Object char[] $contentLength
-                    $read = $reader.Read($buffer, 0, $contentLength)
-                    $body = New-Object string ($buffer, 0, $read)
+                    $charBuffer = New-Object char[] $contentLength
+                    $totalRead = 0
+                    while ($totalRead -lt $contentLength) {
+                        $read = $reader.Read($charBuffer, $totalRead, ($contentLength - $totalRead))
+                        if ($read -le 0) {
+                            break
+                        }
+                        $totalRead += $read
+                    }
+                    $body = New-Object string ($charBuffer, 0, $totalRead)
                 }
                 
                 [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot "operators.json"), $body, [System.Text.Encoding]::UTF8)
