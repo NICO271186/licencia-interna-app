@@ -387,19 +387,23 @@ function loadStateFromServer() {
         .catch(err => {
             // Fallback si el servidor local no está disponible
             if (isGitHub) {
-                fetch('operators.json?t=' + Date.now())
-                    .then(res => {
-                        if (res.ok) return res.json();
-                        throw new Error("No static file");
-                    })
-                    .then(data => {
-                        if (Array.isArray(data) && data.length > 0) {
-                            updateOperatorsIfChanged(data, "[Repositorio GitHub]");
-                        }
-                    })
-                    .catch(err2 => {
-                        console.warn("[Repositorio GitHub] Tampoco se pudo cargar operators.json estático:", err2.message);
-                    });
+                // Solo cargar operators.json del repositorio si localStorage está vacío o no inicializado
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored || stored === "[]") {
+                    fetch('operators.json?t=' + Date.now())
+                        .then(res => {
+                            if (res.ok) return res.json();
+                            throw new Error("No static file");
+                        })
+                        .then(data => {
+                            if (Array.isArray(data) && data.length > 0) {
+                                updateOperatorsIfChanged(data, "[Repositorio GitHub]");
+                            }
+                        })
+                        .catch(err2 => {
+                            console.warn("[Repositorio GitHub] Tampoco se pudo cargar operators.json estático:", err2.message);
+                        });
+                }
             } else {
                 console.warn("[Sincronización LAN] Servidor local no disponible. Usando datos de este navegador:", err.message);
             }
