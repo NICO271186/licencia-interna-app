@@ -93,6 +93,19 @@ try {
                 
                 [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot "operators.json"), $body, [System.Text.Encoding]::UTF8)
                 
+                # --- Auto-sincronización con GitHub en segundo plano ---
+                $gitPath = "C:\Users\nicol\AppData\Local\Microsoft\WinGet\Packages\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\cmd\git.exe"
+                if (Test-Path $gitPath) {
+                    Write-Host "[Auto-Sync] Iniciando envío de datos a GitHub..." -ForegroundColor Cyan
+                    Start-Job -ScriptBlock {
+                        param($gp, $root)
+                        Set-Location $root
+                        & $gp add .
+                        & $gp commit -m "Auto-sync operators database from local server"
+                        & $gp push origin main
+                    } -ArgumentList $gitPath, $PSScriptRoot | Out-Null
+                }
+                
                 $resText = '{"status":"ok"}'
                 $bytes = [System.Text.Encoding]::UTF8.GetBytes($resText)
                 $header = "HTTP/1.1 200 OK`r`nContent-Type: application/json; charset=utf-8`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`nAccess-Control-Allow-Origin: *`r`n`r`n"

@@ -412,13 +412,55 @@ function loadStateFromServer() {
 
 function updateOperatorsIfChanged(data, sourceLabel) {
     const oldDataStr = JSON.stringify(operators);
-    const newDataStr = JSON.stringify(data);
-    if (oldDataStr !== newDataStr) {
-        console.log(`${sourceLabel} Nuevos datos cargados:`, data);
-        operators = data;
+    
+    // Mezclar los operadores locales con los remotos para no perder datos nuevos
+    const merged = mergeOperators(operators, data);
+    const mergedStr = JSON.stringify(merged);
+    
+    if (oldDataStr !== mergedStr) {
+        console.log(`${sourceLabel} Base de datos sincronizada y mezclada:`, merged);
+        operators = merged;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(operators));
         renderApp();
+        
+        // Si el resultado de la mezcla tiene cambios nuevos que no estaban en el servidor remoto,
+        // los subimos de vuelta para que el servidor y los demás clientes los tengan.
+        const newDataStr = JSON.stringify(data);
+        if (mergedStr !== newDataStr) {
+            saveOperatorsToServer();
+        }
     }
+}
+
+function mergeOperators(localList, remoteList) {
+    const mergedMap = new Map();
+    
+    // 1. Agregar todos los operadores de la lista remota como base
+    remoteList.forEach(op => {
+        if (op && op.id) mergedMap.set(op.id, op);
+    });
+    
+    // 2. Agregar o combinar los de la lista local
+    localList.forEach(op => {
+        if (op && op.id) {
+            const existing = mergedMap.get(op.id);
+            if (!existing) {
+                // Es un operador nuevo creado localmente que no está en el servidor remoto
+                mergedMap.set(op.id, op);
+            } else {
+                // Si existe en ambos lados, comparamos el nivel de datos cargados para no sobreescribir información más nueva
+                const localDocsCount = Object.keys(op.documentos || {}).length;
+                const remoteDocsCount = Object.keys(existing.documentos || {}).length;
+                
+                // Si el local tiene más documentos o está en un estado final de aprobación o calificación, lo preferimos
+                if (localDocsCount > remoteDocsCount || op.docsApprovedAt || op.notaTeorica !== null || op.estadoFinal === 'turno_asignado' || op.estadoFinal === 'teorico_aprobado') {
+                    mergedMap.set(op.id, op);
+                }
+            }
+        }
+    });
+    
+    return Array.from(mergedMap.values());
 }
 
 function saveConfigToStorage() {
