@@ -792,6 +792,17 @@ function renderOperatorView() {
     document.getElementById('file-autorizacion').disabled = isLocked;
     document.getElementById('file-certificacion').disabled = isLocked;
 
+    const btnForm = document.getElementById('btn-completar-formulario');
+    if (btnForm) {
+        if (isLocked) {
+            btnForm.style.pointerEvents = 'none';
+            btnForm.style.opacity = '0.5';
+        } else {
+            btnForm.style.pointerEvents = 'auto';
+            btnForm.style.opacity = '1';
+        }
+    }
+
     // Configurar etiqueta de Certificación (Opcional para livianos, obligatorio para pesados)
     const uploaderCert = document.getElementById('uploader-item-certificacion');
     if (uploaderCert) {
@@ -2659,6 +2670,29 @@ function showDocumentPreview(opName, docType, docObj) {
     
     viewerTitle.innerText = `${opName} - ${getDocTypeFriendlyName(docType)}`;
     
+    if (docObj && docObj.dataUrl === 'FORM_COMPLETED') {
+        viewerBody.innerHTML = `
+            <div class="doc-placeholder-preview" style="text-align: center; padding: 20px;">
+                <svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="var(--warning)" stroke-width="1.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <h4 style="margin-top:15px; color:var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;">Autorización de Manejo</h4>
+                <p style="color:var(--text-muted); font-size:0.85rem; margin:5px 0;">Completado a través del formulario externo de Microsoft Forms</p>
+                <p style="color:var(--text-muted); font-size:0.75rem; margin-bottom: 20px;">Fecha: ${formatDateString(docObj.uploadedAt)}</p>
+                <div>
+                    <a href="https://forms.office.com/pages/responsepage.aspx?id=CSPr5FXnDE-JrAgc89hEQJubvuo-C6RDkWVY6mUIj_JUN0xUUUxKNE5VUFFHU0lPUjkwNDVURjg2SyQlQCN0PWcu&route=shorturl" target="_blank" class="btn btn-warning" style="background-color: var(--warning); color: var(--bg-dark); font-weight: bold; text-decoration: none; padding: 8px 16px; border-radius: 6px; display: inline-block;">Ver Respuestas en Microsoft Forms</a>
+                </div>
+            </div>
+        `;
+        document.getElementById('btn-viewer-open-external').style.display = 'none';
+        document.getElementById('btn-viewer-download').style.display = 'none';
+        viewerModal.classList.add('active');
+        return;
+    }
+    
     if (docType === 'foto' && docObj.dataUrl) {
         // Si hay una foto real en base64
         viewerBody.innerHTML = `<img src="${docObj.dataUrl}" alt="Foto 4x4 de ${opName}" style="max-width:100%; border-radius:8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">`;
@@ -3160,6 +3194,26 @@ function initializeEventListeners() {
     document.getElementById('file-foto').addEventListener('change', (e) => handleFileUpload(e, 'foto'));
     document.getElementById('file-autorizacion').addEventListener('change', (e) => handleFileUpload(e, 'autorizacion'));
     document.getElementById('file-certificacion').addEventListener('change', (e) => handleFileUpload(e, 'certificacion'));
+    
+    const btnForm = document.getElementById('btn-completar-formulario');
+    if (btnForm) {
+        btnForm.addEventListener('click', () => {
+            const op = operators.find(o => o.id === currentSelectedOperatorId);
+            if (!op) return;
+            
+            op.documentos.autorizacion = {
+                name: 'Formulario Completado (Microsoft Forms)',
+                size: '--',
+                uploadedAt: new Date().toISOString(),
+                dataUrl: 'FORM_COMPLETED',
+                status: 'cargado'
+            };
+            
+            saveOperatorsToStorage();
+            updateFileStatusLabel('autorizacion', op.documentos.autorizacion);
+            showToast('Formulario de autorización registrado como completado.', 'success');
+        });
+    }
     
     // 5. Filtros en la tabla de Supervisores/Admins
     document.getElementById('filter-search').addEventListener('input', renderOperatorsTable);
