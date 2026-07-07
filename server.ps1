@@ -17,7 +17,20 @@ try {
 
     # Guardar la IP detectada en un archivo de configuración para que los celulares puedan localizar el servidor
     $ipJson = '{"ip":"' + $wifiIP + '"}'
-    [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot "server_ip.json"), $ipJson, [System.Text.Encoding]::UTF8)
+    $ipPath = Join-Path $PSScriptRoot "server_ip.json"
+    [System.IO.File]::WriteAllText($ipPath, $ipJson, [System.Text.Encoding]::UTF8)
+
+    # --- PUSH DE LA NUEVA IP A GITHUB AL INICIAR ---
+    $gitPath = "C:\Users\nicol\AppData\Local\Microsoft\WinGet\Packages\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\cmd\git.exe"
+    if (Test-Path $gitPath) {
+        Start-Job -ScriptBlock {
+            param($gp, $root)
+            Set-Location $root
+            & $gp add server_ip.json
+            & $gp commit -m "Update server IP on startup"
+            & $gp push origin main
+        } -ArgumentList $gitPath, $PSScriptRoot | Out-Null
+    }
 
     $server.Start()
     Write-Host "==========================================================" -ForegroundColor Cyan
