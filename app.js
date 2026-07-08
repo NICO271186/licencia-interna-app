@@ -397,25 +397,48 @@ function saveOperatorsToStorage() {
     saveOperatorsToServer();
 }
 
+function getCleanOperatorsForSync() {
+    return operators.map(op => {
+        const clean = { ...op };
+        // Eliminar campos nulos o vacíos para ahorrar espacio en la URL del GET
+        if (clean.evalCompletedAt === null) delete clean.evalCompletedAt;
+        if (clean.notaTeorica === null) delete clean.notaTeorica;
+        if (clean.documentos && Object.keys(clean.documentos).length === 0) delete clean.documentos;
+        if (clean.pendingNotifications && clean.pendingNotifications.length === 0) delete clean.pendingNotifications;
+        return clean;
+    });
+}
+
 function saveOperatorsToServer() {
     if (cloudDbUrl) {
         logSync("Guardando cambios en la nube...", "🟡 Sincronizando...", "var(--info)");
         
+        // Optimizar el tamaño de los datos y codificarlos en Base64
+        const cleanData = getCleanOperatorsForSync();
+        const jsonStr = JSON.stringify(cleanData);
+        const b64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
         
-        fetch(cloudDbUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                'Content-Type': 'text/plain'
-            },
-            body: JSON.stringify(operators),
-            signal: controller.signal
+        const saveUrl = `${cloudDbUrl}?action=write&data=${encodeURIComponent(b64Data)}`;
+        
+        fetch(saveUrl, {
+            method: 'GET', // Usamos GET para evitar bloqueos del cortafuegos corporativo
+            signal: controller.signal,
+            cache: 'no-store'
         })
-        .then(() => {
+        .then(res => {
             clearTimeout(timeoutId);
-            logSync("Base de datos guardada en Google Sheets.", "🟢 Nube Activa (" + operators.length + ")", "var(--success)");
+            if (res.ok) return res.json();
+            throw new Error("Respuesta HTTP incorrecta (" + res.status + ")");
+        })
+        .then(data => {
+            if (data && data.status === "success") {
+                logSync("Base de datos guardada en Google Sheets.", "🟢 Nube Activa (" + operators.length + ")", "var(--success)");
+            } else {
+                throw new Error((data && data.message) || "Respuesta de servidor fallida");
+            }
         })
         .catch(err => {
             clearTimeout(timeoutId);
