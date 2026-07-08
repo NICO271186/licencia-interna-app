@@ -399,16 +399,29 @@ function saveOperatorsToStorage() {
 function saveOperatorsToServer() {
     if (cloudDbUrl) {
         logSync("Guardando cambios en la nube...", "🟡 Sincronizando...", "var(--info)");
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         fetch(cloudDbUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
                 'Content-Type': 'text/plain'
             },
-            body: JSON.stringify(operators)
+            body: JSON.stringify(operators),
+            signal: controller.signal
         })
-        .then(() => logSync("Base de datos guardada en Google Sheets.", "🟢 Nube Activa", "var(--success)"))
-        .catch(err => logSync("Error al guardar en Google Sheets: " + err.message, "🔴 Error Nube", "var(--danger)"));
+        .then(() => {
+            clearTimeout(timeoutId);
+            logSync("Base de datos guardada en Google Sheets.", "🟢 Nube Activa", "var(--success)");
+        })
+        .catch(err => {
+            clearTimeout(timeoutId);
+            const isTimeout = err.name === 'AbortError';
+            const msg = isTimeout ? "Límite de tiempo agotado (Timeout)" : err.message;
+            logSync("Error al guardar en Google Sheets: " + msg, "🔴 Error Nube", "var(--danger)");
+        });
         return;
     }
     
@@ -435,8 +448,12 @@ function loadStateFromServer() {
         const sep = cloudDbUrl.includes('?') ? '&' : '?';
         const freshUrl = cloudDbUrl + sep + 't=' + Date.now();
         
-        fetch(freshUrl)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        fetch(freshUrl, { signal: controller.signal })
             .then(res => {
+                clearTimeout(timeoutId);
                 if (res.ok) return res.json();
                 throw new Error("Respuesta HTTP incorrecta (" + res.status + ")");
             })
@@ -451,7 +468,12 @@ function loadStateFromServer() {
                     throw new Error("Datos devueltos no son un listado válido");
                 }
             })
-            .catch(err => logSync("Error de carga en la nube: " + err.message, "🔴 Error Nube", "var(--danger)"));
+            .catch(err => {
+                clearTimeout(timeoutId);
+                const isTimeout = err.name === 'AbortError';
+                const msg = isTimeout ? "Límite de tiempo agotado (Timeout)" : err.message;
+                logSync("Error de carga en la nube: " + msg, "🔴 Error Nube", "var(--danger)");
+            });
         return;
     }
 
