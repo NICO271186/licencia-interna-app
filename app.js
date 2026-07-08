@@ -239,10 +239,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             renderApp();
             
-            // Polling en segundo plano para sincronizar datos en red local LAN cada 3 segundos
+            // Polling en segundo plano para sincronizar datos (30s en nube para evitar límites, 5s en LAN)
+            const syncInterval = cloudDbUrl ? 30000 : 5000;
             setInterval(() => {
                 loadStateFromServer();
-            }, 3000);
+            }, syncInterval);
             
             if (currentUser) {
                 showToast(`Sesión activa: ${currentUser.name} (${currentUser.role.toUpperCase()})`, 'info');
@@ -414,7 +415,7 @@ function saveOperatorsToServer() {
         })
         .then(() => {
             clearTimeout(timeoutId);
-            logSync("Base de datos guardada en Google Sheets.", "🟢 Nube Activa", "var(--success)");
+            logSync("Base de datos guardada en Google Sheets.", "🟢 Nube Activa (" + operators.length + ")", "var(--success)");
         })
         .catch(err => {
             clearTimeout(timeoutId);
@@ -460,7 +461,7 @@ function loadStateFromServer() {
             .then(data => {
                 if (Array.isArray(data) && data.length > 0) {
                     updateOperatorsIfChanged(data, "[Sincronización Nube]");
-                    logSync("Descargados " + data.length + " operadores de la nube.", "🟢 Nube Activa", "var(--success)");
+                    logSync("Descargados " + data.length + " operadores de la nube.", "🟢 Nube Activa (" + data.length + ")", "var(--success)");
                 } else if (Array.isArray(data) && data.length === 0) {
                     logSync("Base de datos en la nube vacía. Inicializando...", "🟡 Sincronizando...", "var(--info)");
                     saveOperatorsToServer();
