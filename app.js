@@ -529,19 +529,21 @@ function updateOperatorsIfChanged(data, sourceLabel) {
     // Mezclar los operadores locales con los remotos para no perder datos nuevos
     const merged = mergeOperators(operators, data);
     const mergedStr = JSON.stringify(merged);
+    const remoteDataStr = JSON.stringify(data);
     
-    if (oldDataStr !== mergedStr) {
-        console.log(`${sourceLabel} Base de datos sincronizada y mezclada:`, merged);
+    const localChanged = (oldDataStr !== mergedStr);
+    const remoteNeedsUpdate = (mergedStr !== remoteDataStr);
+    
+    if (localChanged) {
+        console.log(`${sourceLabel} Base de datos local actualizada con datos mezclados:`, merged);
         operators = merged;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(operators));
         renderApp();
-        
-        // Si el resultado de la mezcla tiene cambios nuevos que no estaban en el servidor remoto,
-        // los subimos de vuelta para que el servidor y los demás clientes los tengan.
-        const newDataStr = JSON.stringify(data);
-        if (mergedStr !== newDataStr) {
-            saveOperatorsToServer();
-        }
+    }
+    
+    if (remoteNeedsUpdate) {
+        console.log(`${sourceLabel} Servidor desactualizado. Subiendo cambios a la nube...`);
+        saveOperatorsToServer();
     }
 }
 
