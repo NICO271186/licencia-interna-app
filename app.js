@@ -247,9 +247,18 @@ function loadState() {
     if (storedOperators) {
         try {
             operators = JSON.parse(storedOperators);
+            if (!Array.isArray(operators)) {
+                throw new Error("Stored operators is not an array");
+            }
+            // Validar que todos los elementos sean objetos válidos con ID
+            const hasInvalid = operators.some(op => !op || typeof op !== 'object' || !op.id);
+            if (hasInvalid) {
+                throw new Error("Contains invalid operator objects");
+            }
         } catch (e) {
-            console.error("Error al parsear operadores guardados, usando mock.", e);
+            console.error("Error al parsear operadores guardados, usando mock.", e.message);
             operators = [...mockOperators];
+            saveOperatorsToStorage();
         }
     } else {
         operators = [...mockOperators];
