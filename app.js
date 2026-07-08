@@ -452,7 +452,10 @@ function loadStateFromServer() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        fetch(freshUrl, { signal: controller.signal })
+        fetch(freshUrl, { 
+            signal: controller.signal,
+            cache: 'no-store'
+        })
             .then(res => {
                 clearTimeout(timeoutId);
                 if (res.ok) return res.json();
