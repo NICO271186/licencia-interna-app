@@ -22,7 +22,7 @@
             <div class="login-brand">
                 <img src="newmont_logo.jpg" alt="Newmont Argentina" class="login-logo">
                 <h2>SLI - Licencia de Conducción Interna</h2>
-                <div style="font-size: 0.75rem; background-color: var(--primary); color: white; padding: 3px 10px; border-radius: 99px; display: inline-block; font-weight: bold; margin-top: 5px; margin-bottom: 10px;">Versión 4.7 (Active Status Header)</div>
+                <div style="font-size: 0.75rem; background-color: var(--primary); color: white; padding: 3px 10px; border-radius: 99px; display: inline-block; font-weight: bold; margin-top: 5px; margin-bottom: 10px;">Versión 4.8 (Manual Sync Badge)</div>
                 <p>Ingresa tus credenciales para acceder al sistema</p>
             </div>
 
@@ -178,7 +178,7 @@
             <!-- User Status & Logout -->
             <div class="user-status-container" id="user-status-header">
                 <span class="user-welcome">Hola, <strong id="logged-user-name">--</strong> (<span id="logged-user-role" class="badge badge-info">--</span>)</span>
-                <span id="sync-header-badge" style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.65rem; margin-left: 8px; margin-right: 10px; background: rgba(255,255,255,0.05); color: var(--text-muted); vertical-align: middle;">Sincronizando...</span>
+                <span id="sync-header-badge" style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.65rem; margin-left: 8px; margin-right: 10px; background: rgba(255,255,255,0.05); color: var(--text-muted); vertical-align: middle; cursor: pointer; transition: transform 0.2s;" title="Haga clic para forzar sincronización ahora">Sincronizando...</span>
                 <button class="btn btn-primary btn-sm" id="btn-sync-github" style="display: none; align-items: center; gap: 6px; background-color: var(--success); border-color: var(--success); margin-right: 10px; font-weight: 600;">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.2 15a8.85 8.85 0 0 0-1.2-4.5 8.85 8.85 0 0 0-3-3.7 8.85 8.85 0 0 0-4.5-1.2 8.85 8.85 0 0 0-4.5 1.2 8.85 8.85 0 0 0-3 3.7 8.85 8.85 0 0 0-1.2 4.5 1 1 0 0 0 1 1h15.4a1 1 0 0 0 1-1z"></path><path d="M12 12v4M10 14l2-2 2 2"></path></svg>
                     Sincronizar a GitHub
@@ -842,6 +842,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=4.7"></script>
+    <script src="app.js?v=4.8"></script>
 </body>
 </html>

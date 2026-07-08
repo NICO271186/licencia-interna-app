@@ -3237,6 +3237,22 @@ function initializeEventListeners() {
     document.getElementById('form-register-new').addEventListener('submit', handleRegisterNewUser);
     document.getElementById('btn-logout').addEventListener('click', handleLogout);
     
+    // Configurar clic en etiquetas de estado para forzar sincronización manual
+    const headerSyncBadge = document.getElementById('sync-header-badge');
+    if (headerSyncBadge) {
+        headerSyncBadge.addEventListener('click', () => {
+            showToast("Forzando sincronización con la nube...", "info");
+            loadStateFromServer();
+        });
+    }
+    const loginSyncBadge = document.getElementById('sync-status-badge');
+    if (loginSyncBadge) {
+        loginSyncBadge.addEventListener('click', () => {
+            showToast("Forzando sincronización con la nube...", "info");
+            loadStateFromServer();
+        });
+    }
+    
     const btnSync = document.getElementById('btn-sync-github');
     if (btnSync) {
         btnSync.addEventListener('click', () => {
