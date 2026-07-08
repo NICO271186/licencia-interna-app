@@ -164,21 +164,45 @@ let localServerIP = 'localhost';
 // Si está vacía, la app usará el servidor local de red local.
 let cloudDbUrl = 'https://script.google.com/macros/s/AKfycbzxWe_sdcyI7gT_Qi4DnD0Ldg61ByCOAI_mfipJ1_d1sHX3sHgeDgIMPR1A_QWpXmvEew/exec';
 
+function logSync(msg, badgeText = null, badgeBg = null) {
+    const logEl = document.getElementById('sync-log-text');
+    const badgeEl = document.getElementById('sync-status-badge');
+    
+    if (logEl) {
+        const timestamp = new Date().toLocaleTimeString();
+        if (logEl.innerText === "Cargando sistema...") {
+            logEl.innerText = `[${timestamp}] ${msg}`;
+        } else {
+            logEl.innerText += `\n[${timestamp}] ${msg}`;
+        }
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+    
+    if (badgeEl && badgeText) {
+        badgeEl.innerText = badgeText;
+        if (badgeBg) {
+            badgeEl.style.backgroundColor = badgeBg;
+            badgeEl.style.color = 'white';
+        }
+    }
+}
+
 function loadServerIP() {
+    logSync("Buscando IP del servidor LAN...", "🟡 Iniciando...", "var(--info)");
     return fetch('server_ip.json?t=' + Date.now())
         .then(res => {
             if (res.ok) return res.json();
-            throw new Error("No IP file");
+            throw new Error("Archivo de IP no encontrado");
         })
         .then(data => {
             if (data && data.ip) {
                 localServerIP = data.ip;
-                console.log("[Sincronización LAN] IP del servidor local obtenida:", localServerIP);
+                logSync("IP LAN resuelta: " + localServerIP);
             }
             updateQRUI();
         })
         .catch(err => {
-            console.warn("[Sincronización LAN] No se pudo cargar la IP del servidor (usando localhost):", err.message);
+            logSync("LAN offline: " + err.message);
             updateQRUI();
         });
 }
@@ -365,6 +389,7 @@ function saveOperatorsToStorage() {
 
 function saveOperatorsToServer() {
     if (cloudDbUrl) {
+        logSync("Guardando cambios en la nube...", "🟡 Sincronizando...", "var(--info)");
         fetch(cloudDbUrl, {
             method: 'POST',
             mode: 'no-cors',
@@ -373,8 +398,8 @@ function saveOperatorsToServer() {
             },
             body: JSON.stringify(operators)
         })
-        .then(() => console.log("[Sincronización Nube] Base de datos guardada en Google Sheets (no-cors)"))
-        .catch(err => console.error("[Sincronización Nube] Error al guardar en Google Sheets:", err.message));
+        .then(() => logSync("Base de datos guardada en Google Sheets.", "🟢 Nube Activa", "var(--success)"))
+        .catch(err => logSync("Error al guardar en Google Sheets: " + err.message, "🔴 Error Nube", "var(--danger)"));
         return;
     }
     
@@ -395,6 +420,8 @@ function saveOperatorsToServer() {
 
 function loadStateFromServer() {
     if (cloudDbUrl) {
+        logSync("Cargando operadores desde la nube...", "🟡 Sincronizando...", "var(--info)");
+        
         // Añadir cache buster para evitar que el navegador o los servidores de Google devuelvan datos cacheados
         const sep = cloudDbUrl.includes('?') ? '&' : '?';
         const freshUrl = cloudDbUrl + sep + 't=' + Date.now();
@@ -402,17 +429,20 @@ function loadStateFromServer() {
         fetch(freshUrl)
             .then(res => {
                 if (res.ok) return res.json();
-                throw new Error("No Cloud API");
+                throw new Error("Respuesta HTTP incorrecta (" + res.status + ")");
             })
             .then(data => {
                 if (Array.isArray(data) && data.length > 0) {
                     updateOperatorsIfChanged(data, "[Sincronización Nube]");
+                    logSync("Descargados " + data.length + " operadores de la nube.", "🟢 Nube Activa", "var(--success)");
                 } else if (Array.isArray(data) && data.length === 0) {
-                    console.log("[Sincronización Nube] Base de datos en la nube vacía. Inicializando con datos de este dispositivo...");
+                    logSync("Base de datos en la nube vacía. Inicializando...", "🟡 Sincronizando...", "var(--info)");
                     saveOperatorsToServer();
+                } else {
+                    throw new Error("Datos devueltos no son un listado válido");
                 }
             })
-            .catch(err => console.warn("[Sincronización Nube] Error al cargar de Google Sheets:", err.message));
+            .catch(err => logSync("Error de carga en la nube: " + err.message, "🔴 Error Nube", "var(--danger)"));
         return;
     }
 
