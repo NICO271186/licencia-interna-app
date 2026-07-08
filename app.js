@@ -167,6 +167,7 @@ let cloudDbUrl = 'https://script.google.com/macros/s/AKfycbzxWe_sdcyI7gT_Qi4DnD0
 function logSync(msg, badgeText = null, badgeBg = null) {
     const logEl = document.getElementById('sync-log-text');
     const badgeEl = document.getElementById('sync-status-badge');
+    const headerBadgeEl = document.getElementById('sync-header-badge');
     
     if (logEl) {
         const timestamp = new Date().toLocaleTimeString();
@@ -183,6 +184,14 @@ function logSync(msg, badgeText = null, badgeBg = null) {
         if (badgeBg) {
             badgeEl.style.backgroundColor = badgeBg;
             badgeEl.style.color = 'white';
+        }
+    }
+    
+    if (headerBadgeEl && badgeText) {
+        headerBadgeEl.innerText = badgeText;
+        if (badgeBg) {
+            headerBadgeEl.style.backgroundColor = badgeBg;
+            headerBadgeEl.style.color = 'white';
         }
     }
 }
