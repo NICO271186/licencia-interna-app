@@ -402,7 +402,7 @@ function saveOperatorsToServer() {
         logSync("Guardando cambios en la nube...", "🟡 Sincronizando...", "var(--info)");
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         
         fetch(cloudDbUrl, {
             method: 'POST',
@@ -450,7 +450,7 @@ function loadStateFromServer() {
         const freshUrl = cloudDbUrl + sep + 't=' + Date.now();
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         
         fetch(freshUrl, { 
             signal: controller.signal,
