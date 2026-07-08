@@ -368,6 +368,9 @@ function saveOperatorsToServer() {
         fetch(cloudDbUrl, {
             method: 'POST',
             mode: 'no-cors',
+            headers: {
+                'Content-Type': 'text/plain'
+            },
             body: JSON.stringify(operators)
         })
         .then(() => console.log("[Sincronización Nube] Base de datos guardada en Google Sheets (no-cors)"))
