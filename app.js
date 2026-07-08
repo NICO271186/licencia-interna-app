@@ -358,10 +358,10 @@ function saveOperatorsToServer() {
     if (cloudDbUrl) {
         fetch(cloudDbUrl, {
             method: 'POST',
+            mode: 'no-cors',
             body: JSON.stringify(operators)
         })
-        .then(res => res.json())
-        .then(data => console.log("[Sincronización Nube] Base de datos guardada en Google Sheets:", data))
+        .then(() => console.log("[Sincronización Nube] Base de datos guardada en Google Sheets (no-cors)"))
         .catch(err => console.error("[Sincronización Nube] Error al guardar en Google Sheets:", err.message));
         return;
     }
@@ -383,7 +383,11 @@ function saveOperatorsToServer() {
 
 function loadStateFromServer() {
     if (cloudDbUrl) {
-        fetch(cloudDbUrl)
+        // Añadir cache buster para evitar que el navegador o los servidores de Google devuelvan datos cacheados
+        const sep = cloudDbUrl.includes('?') ? '&' : '?';
+        const freshUrl = cloudDbUrl + sep + 't=' + Date.now();
+        
+        fetch(freshUrl)
             .then(res => {
                 if (res.ok) return res.json();
                 throw new Error("No Cloud API");
