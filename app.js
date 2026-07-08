@@ -160,6 +160,9 @@ let currentSelectedOperatorId = null; // ID del operador logueado (si es operado
 let activeEditingOperatorId = null; // Para el modal de edición/calificación
 // Servidor local IP para sincronización de red LAN/Wi-Fi
 let localServerIP = 'localhost';
+// URL de Google Apps Script para Sincronización en la Nube (Google Sheets)
+// Si está vacía, la app usará el servidor local de red local.
+let cloudDbUrl = '';
 
 function loadServerIP() {
     return fetch('server_ip.json?t=' + Date.now())
@@ -352,6 +355,17 @@ function saveOperatorsToStorage() {
 }
 
 function saveOperatorsToServer() {
+    if (cloudDbUrl) {
+        fetch(cloudDbUrl, {
+            method: 'POST',
+            body: JSON.stringify(operators)
+        })
+        .then(res => res.json())
+        .then(data => console.log("[Sincronización Nube] Base de datos guardada en Google Sheets:", data))
+        .catch(err => console.error("[Sincronización Nube] Error al guardar en Google Sheets:", err.message));
+        return;
+    }
+    
     let url = '/api/operators';
     if (location.hostname.includes('github.io')) {
         url = `http://${localServerIP}:8080/api/operators`;
@@ -368,6 +382,21 @@ function saveOperatorsToServer() {
 }
 
 function loadStateFromServer() {
+    if (cloudDbUrl) {
+        fetch(cloudDbUrl)
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error("No Cloud API");
+            })
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    updateOperatorsIfChanged(data, "[Sincronización Nube]");
+                }
+            })
+            .catch(err => console.warn("[Sincronización Nube] Error al cargar de Google Sheets:", err.message));
+        return;
+    }
+
     let url = '/api/operators';
     const isGitHub = location.hostname.includes('github.io');
     if (isGitHub) {
