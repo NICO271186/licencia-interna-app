@@ -162,7 +162,7 @@ let activeEditingOperatorId = null; // Para el modal de edición/calificación
 let localServerIP = 'localhost';
 // URL de Google Apps Script para Sincronización en la Nube (Google Sheets)
 // Si está vacía, la app usará el servidor local de red local.
-let cloudDbUrl = '';
+let cloudDbUrl = 'https://script.google.com/macros/s/AKfycbzxWe_sdcyI7gT_Qi4DnD0Ldg61ByCOAI_mfipJ1_d1sHX3sHgeDgIMPR1A_QWpXmvEew/exec';
 
 function loadServerIP() {
     return fetch('server_ip.json?t=' + Date.now())
@@ -391,6 +391,9 @@ function loadStateFromServer() {
             .then(data => {
                 if (Array.isArray(data) && data.length > 0) {
                     updateOperatorsIfChanged(data, "[Sincronización Nube]");
+                } else if (Array.isArray(data) && data.length === 0) {
+                    console.log("[Sincronización Nube] Base de datos en la nube vacía. Inicializando con datos de este dispositivo...");
+                    saveOperatorsToServer();
                 }
             })
             .catch(err => console.warn("[Sincronización Nube] Error al cargar de Google Sheets:", err.message));
